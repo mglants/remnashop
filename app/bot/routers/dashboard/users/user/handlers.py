@@ -1,21 +1,19 @@
-import logging
 from typing import Union
 
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode, SubManager
 from aiogram_dialog.widgets.kbd import Button, Select
+from loguru import logger
 
-from app.bot.models import AppContainer
 from app.bot.states import DashboardUser, MainMenu
 from app.core.constants import APP_CONTAINER_KEY, USER_KEY
+from app.core.container import AppContainer
 from app.core.enums import MessageEffect, UserRole
-from app.core.formatters import format_log_user
-from app.db.models import UserDto
-
-logger = logging.getLogger(__name__)
+from app.core.utils.formatters import format_log_user
+from app.db.models.dto import UserDto
 
 
-async def reset_user_dialog(dialog_manager: DialogManager, target_user: UserDto):
+async def reset_user_dialog(dialog_manager: DialogManager, target_user: UserDto) -> None:
     bg_manager = dialog_manager.bg(
         user_id=target_user.telegram_id,
         chat_id=target_user.telegram_id,
@@ -35,7 +33,7 @@ async def handle_role_switch_preconditions(
     if target_user.telegram_id == user.telegram_id:
         logger.info(f"{format_log_user(user)} Attempted to switch role to self")
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-user-switch-role-self",
             message_effect=MessageEffect.POOP,
         )
@@ -51,6 +49,7 @@ async def handle_role_switch_preconditions(
 
         await manager.start(state=MainMenu.MAIN, mode=StartMode.RESET_STACK)
         await container.services.notification.notify_super_dev(
+            dev=await container.services.user.get(telegram_id=container.config.bot.dev_id),
             text_key="ntf-user-switch-role-dev",
             id=str(user.telegram_id),
             name=user.name,
@@ -76,16 +75,23 @@ async def on_block_toggle(
     widget: Button,
     dialog_manager: DialogManager,
 ) -> None:
+    if not isinstance(dialog_manager.start_data, dict):
+        return
+
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
-    target_telegram_id = dialog_manager.start_data.get("target_telegram_id")
+    target_telegram_id = dialog_manager.start_data["target_telegram_id"]
     target_user = await container.services.user.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        return
+
     blocked = not target_user.is_blocked
 
     if target_user.telegram_id == user.telegram_id:
         logger.info(f"{format_log_user(user)} Attempted to block to self")
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-user-block-self",
             message_effect=MessageEffect.POOP,
         )
@@ -99,6 +105,7 @@ async def on_block_toggle(
         await container.services.user.set_block(user=user, blocked=True)
         await dialog_manager.start(state=MainMenu.MAIN, mode=StartMode.RESET_STACK)
         await container.services.notification.notify_super_dev(
+            dev=await container.services.user.get(telegram_id=container.config.bot.dev_id),
             text_key="ntf-user-block-dev",
             id=user.telegram_id,
             name=user.name,
@@ -116,18 +123,24 @@ async def on_block_toggle(
 
 async def on_role_selected(
     callback: CallbackQuery,
-    widget: Select,
+    widget: Select[UserRole],
     dialog_manager: DialogManager,
-    selected_role: str,
+    selected_role: UserRole,
 ) -> None:
+    if not isinstance(dialog_manager.start_data, dict):
+        return
+
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
-    target_telegram_id = dialog_manager.start_data.get("target_telegram_id")
+    target_telegram_id = dialog_manager.start_data["target_telegram_id"]
     target_user = await container.services.user.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        return
 
     if await handle_role_switch_preconditions(user, target_user, container, dialog_manager):
         return
 
-    await container.services.user.set_role(user=target_user, role=UserRole(selected_role))
+    await container.services.user.set_role(user=target_user, role=selected_role)
     await reset_user_dialog(dialog_manager, target_user)
     logger.info(f"{format_log_user(user)} Switched role for {format_log_user(target_user)}")

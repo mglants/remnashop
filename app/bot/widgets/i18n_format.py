@@ -1,4 +1,3 @@
-import logging
 import re
 from re import Match
 from typing import Any, Optional, Union
@@ -7,16 +6,15 @@ from aiogram_dialog.api.internal import TextWidget
 from aiogram_dialog.api.protocols import DialogManager
 from aiogram_dialog.widgets.common import WhenCondition
 from aiogram_dialog.widgets.text import Text
+from loguru import logger
 from magic_filter import MagicFilter
 
-from app.bot.middlewares.i18n import I18nFormatter
 from app.core.constants import I18N_FORMATTER_KEY
-
-logger = logging.getLogger(__name__)
+from app.core.utils.types import I18nFormatter
 
 
 def collapse_closing_tags(text: str) -> str:
-    def replacer(match: Match) -> str:
+    def replacer(match: Match[str]) -> str:
         tag = match.group(1)
         content = match.group(2).rstrip()
         return f"<{tag}>{content}</{tag}>"

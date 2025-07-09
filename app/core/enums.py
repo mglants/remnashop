@@ -4,42 +4,22 @@ from typing import Any, Callable
 from aiogram import Bot
 from aiogram.types import BotCommand, ContentType
 
+# TODO: Consider moving to separate files
+
 
 class MessageEffect(StrEnum):
-    FIRE = "5104841245755180586"
-    LIKE = "5107584321108051014"
-    DISLIKE = "5104858069142078462"
-    LOVE = "5044134455711629726"
-    CONFETTI = "5046509860389126442"
-    POOP = "5046589136895476101"
+    FIRE = "5104841245755180586"  #     🔥
+    LIKE = "5107584321108051014"  #     👍
+    DISLIKE = "5104858069142078462"  #  👎
+    LOVE = "5044134455711629726"  #     ❤️
+    CONFETTI = "5046509860389126442"  # 🎉
+    POOP = "5046589136895476101"  #     💩
 
 
-class ByteUnit(StrEnum):
-    BYTE = "unit-bytes"
-    KILOBYTE = "unit-kilobytes"
-    MEGABYTE = "unit-megabytes"
-    GIGABYTE = "unit-gigabytes"
-    TERABYTE = "unit-terabytes"
-
-
-class TimeUnit(StrEnum):
-    SECOND = "unit-seconds"
-    MINUTE = "unit-minutes"
-    HOUR = "unit-hours"
-    DAY = "unit-days"
-
-
-class SystemNotificationType(StrEnum):
-    BOT_LIFETIME = auto()
-    USER_REGISTERED = auto()
-    SUBSCRIPTION = auto()
-    PROMOCODE_ACTIVATED = auto()
-    # TODO: TORRENT_BLOCK
-    # TODO: TRAFFIC_OVERUSE
-
-
-class UserNotificationType(StrEnum):
-    pass
+class BannerName(StrEnum):
+    DEFAULT = auto()
+    MENU = auto()
+    DASHBOARD = auto()
 
 
 class BannerFormat(StrEnum):
@@ -52,11 +32,11 @@ class BannerFormat(StrEnum):
     @property
     def content_type(self) -> ContentType:
         return {
-            self.JPG: ContentType.PHOTO,
-            self.JPEG: ContentType.PHOTO,
-            self.PNG: ContentType.PHOTO,
-            self.GIF: ContentType.ANIMATION,
-            self.WEBP: ContentType.PHOTO,
+            BannerFormat.JPG: ContentType.PHOTO,
+            BannerFormat.JPEG: ContentType.PHOTO,
+            BannerFormat.PNG: ContentType.PHOTO,
+            BannerFormat.GIF: ContentType.ANIMATION,
+            BannerFormat.WEBP: ContentType.PHOTO,
         }[self]
 
 
@@ -75,10 +55,15 @@ class MediaType(StrEnum):
                 return bot_instance.send_document
 
 
-class BannerName(StrEnum):
-    DEFAULT = auto()
-    MENU = auto()
-    DASHBOARD = auto()
+class SystemNotificationType(StrEnum):
+    BOT_LIFETIME = auto()
+    USER_REGISTERED = auto()
+    SUBSCRIPTION = auto()
+    PROMOCODE_ACTIVATED = auto()
+
+
+class UserNotificationType(StrEnum):
+    pass
 
 
 class UserRole(StrEnum):
@@ -137,8 +122,8 @@ class MaintenanceMode(StrEnum):
 
 
 class Command(Enum):
-    START = BotCommand(command="start", description="Restart bot")
-    HELP = BotCommand(command="help", description="Show help")
+    START = BotCommand(command="start", description="cmd-start")
+    # HELP = BotCommand(command="help", description="cmd-help")
 
 
 class Locale(StrEnum):
@@ -198,16 +183,3 @@ class MiddlewareEventType(StrEnum):  # https://docs.aiogram.dev/en/latest/api/ty
     CHAT_BOOST = auto()
     REMOVED_CHAT_BOOST = auto()
     ERROR = auto()
-
-
-class LogLevel(StrEnum):
-    INFO = auto()
-    DEBUG = auto()
-    WARNING = auto()
-    ERROR = auto()
-    CRITICAL = auto()
-
-
-class ArchiveFormat(StrEnum):
-    ZIP = auto()
-    GZ = auto()

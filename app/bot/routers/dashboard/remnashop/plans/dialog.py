@@ -1,3 +1,5 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import (
@@ -246,12 +248,12 @@ plan_durations = Window(
             Button(
                 text=I18nFormat("btn-plan-duration", duration=F["item"]["days"]),
                 id="select_duration",
-                on_click=on_duration_selected,
+                on_click=on_duration_selected,  # type: ignore
             ),
             Button(
                 text=Format("❌"),
                 id="remove_duration",
-                on_click=on_duration_removed,
+                on_click=on_duration_removed,  # type: ignore
             ),
         ),
         id="duration_list",
@@ -338,7 +340,7 @@ plan_price = Window(
 )
 
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     plans,
     plan_config,
     plan_name,

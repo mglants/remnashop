@@ -3,6 +3,6 @@ from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
 
-class IsPrivate(BaseFilter):
+class PrivateFilter(BaseFilter):
     async def __call__(self, event: Message) -> bool:
         return event.chat.type == ChatType.PRIVATE

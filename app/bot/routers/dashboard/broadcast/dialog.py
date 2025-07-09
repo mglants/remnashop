@@ -1,3 +1,5 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Button, Row, Start
 
@@ -53,4 +55,4 @@ broadcast = Window(
 )
 
 
-router = Dialog(broadcast)
+router: Final[Dialog] = Dialog(broadcast)

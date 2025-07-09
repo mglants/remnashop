@@ -1,19 +1,16 @@
-import logging
-
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button
+from aiogram_dialog.widgets.kbd import Button, Select
+from loguru import logger
 
-from app.bot.models import AppContainer
 from app.bot.states import DashboardUsers
 from app.core.constants import APP_CONTAINER_KEY, USER_KEY
-from app.core.formatters import format_log_user
-from app.db.models import UserDto
+from app.core.container import AppContainer
+from app.core.utils.formatters import format_log_user
+from app.db.models.dto import UserDto
 
 from .user.handlers import start_user_window
-
-logger = logging.getLogger(__name__)
 
 
 async def on_user_search(
@@ -39,7 +36,7 @@ async def on_user_search(
 
     if target_user is None:
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-user-not-found",
         )
         return
@@ -50,7 +47,7 @@ async def on_user_search(
 
 async def on_user_selected(
     callback: CallbackQuery,
-    widget: Button,
+    widget: Select[int],
     dialog_manager: DialogManager,
     user_selected: int,
 ) -> None:

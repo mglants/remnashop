@@ -3,7 +3,7 @@ from typing import Any, Type
 
 from aiogram_dialog import DialogManager
 
-from app.bot.models import AppContainer
+from app.core.container import AppContainer
 from app.core.enums import SystemNotificationType, UserNotificationType
 
 
@@ -31,9 +31,9 @@ async def _get_notification_types_data(
 async def user_types_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
-    **kwargs,
-) -> dict:
-    settings = await container.services.notification_settings.get()
+    **kwargs: Any,
+) -> dict[str, Any]:
+    settings = await container.redis_repository.get_user_notification_settings()
     notification_types_data = await _get_notification_types_data(settings, UserNotificationType)
     return {"types": notification_types_data}
 
@@ -41,8 +41,8 @@ async def user_types_getter(
 async def system_types_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
-    **kwargs,
-) -> dict:
-    settings = await container.services.notification_settings.get()
+    **kwargs: Any,
+) -> dict[str, Any]:
+    settings = await container.redis_repository.get_system_notification_settings()
     notification_types_data = await _get_notification_types_data(settings, SystemNotificationType)
     return {"types": notification_types_data}

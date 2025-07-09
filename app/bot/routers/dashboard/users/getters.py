@@ -1,14 +1,16 @@
+from typing import Any
+
 from aiogram_dialog import DialogManager
 
-from app.bot.models import AppContainer
-from app.core.formatters import format_percent
+from app.core.container import AppContainer
+from app.core.utils.formatters import format_percent
 
 
 async def blacklist_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     blocked_users = await container.services.user.get_blocked_users()
     users = await container.services.user.count()
 

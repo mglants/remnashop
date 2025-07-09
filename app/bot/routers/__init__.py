@@ -1,11 +1,12 @@
-from . import dashboard, menu, notification
+from . import dashboard, extra, menu
 from .dashboard import broadcast, promocodes, remnashop, remnawave, users
 
 # NOTE: Order matters!
 routers = [
-    menu.handlers.router,  # NOTE: Must be registered first to handle common entrypoints!
+    extra.notification.router,  # NOTE: Must be registered first to handle notifications!
+    #
+    menu.handlers.router,  # NOTE: Must be registered second to handle common entrypoints!
     menu.dialog.router,
-    notification.handlers.router,
     #
     dashboard.dialog.router,
     broadcast.dialog.router,
@@ -19,6 +20,11 @@ routers = [
     #
     users.dialog.router,
     users.user.dialog.router,
+    #
+    # Other routers
+    #
+    extra.test.router,
+    extra.member.router,
 ]
 
 __all__ = [

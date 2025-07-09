@@ -1,58 +1,41 @@
-from typing import Any, Awaitable, Callable, MutableMapping, Optional, Union
+from typing import Any, Awaitable, Callable
 
-from aiogram.dispatcher.flags import get_flag
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import TelegramObject
 from cachetools import TTLCache
+from loguru import logger
 
-from app.core.constants import THROTTLING_KEY, USER_KEY
+from app.core.constants import APP_CONTAINER_KEY, USER_KEY
+from app.core.container import AppContainer
 from app.core.enums import MiddlewareEventType
-from app.core.formatters import format_log_user
+from app.core.utils.formatters import format_log_user
 from app.db.models.dto import UserDto
 
 from .base import EventTypedMiddleware
-
-DEFAULT_KEY = "default"
-DEFAULT_TTL = 0.5
 
 
 class ThrottlingMiddleware(EventTypedMiddleware):
     __event_types__ = [MiddlewareEventType.MESSAGE, MiddlewareEventType.CALLBACK_QUERY]
 
-    def __init__(
-        self,
-        default_key: str = DEFAULT_KEY,
-        default_ttl: float = DEFAULT_TTL,
-        ttl_map: Optional[dict[str, float]] = None,
-    ) -> None:
+    def __init__(self, ttl: float = 0.5) -> None:
+        self.cache: TTLCache[int, Any] = TTLCache(maxsize=10_000, ttl=ttl)
         super().__init__()
-        ttl_map = ttl_map or {}
-
-        if default_key not in ttl_map:
-            ttl_map[default_key] = default_ttl
-
-        self.default_key = default_key
-        self.caches: dict[str, MutableMapping[int, None]] = {}
-
-        for name, ttl in ttl_map.items():
-            self.caches[name] = TTLCache(maxsize=10_000, ttl=ttl)
 
     async def __call__(
         self,
-        handler: Callable[[Union[Message, CallbackQuery], dict[str, Any]], Awaitable[Any]],
-        event: Union[Message, CallbackQuery],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        user: Optional[UserDto] = data.get(USER_KEY)
+        container: AppContainer = data[APP_CONTAINER_KEY]
+        user: UserDto = data[USER_KEY]
 
-        if user is None:
+        if user.telegram_id in self.cache:
+            await container.services.notification.notify_user(
+                user=user,
+                text_key="ntf-throttling-many-requests",
+            )
+            logger.warning(f"{format_log_user(user)} Throttled")
             return
 
-        key = get_flag(handler=data, name=THROTTLING_KEY, default=self.default_key)
-        cache = self.caches.get(key, self.caches[DEFAULT_KEY])
-
-        if user.telegram_id in cache:
-            self.logger.warning(f"{format_log_user(user)} Throttled")
-            return
-
-        cache[user.telegram_id] = None
+        self.cache[user.telegram_id] = None
         return await handler(event, data)

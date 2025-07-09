@@ -1,31 +1,89 @@
-[tool.poetry]
+[project]
 name = "remnashop"
-version = "2.0.0"
+version = "1.0.0"
 description = "This is a Telegram bot for selling VPN subscriptions. It works with Remnawave"
-authors = ["snoups"]
+authors = [{ name = "snoups" }]
 readme = "README.md"
-
-packages = [
-    { include = "app" }
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "aiogram~=3.20.0",
+    "aiogram-dialog~=2.3.1",
+    "alembic~=1.15.2",
+    "asyncpg~=0.30.0",
+    "fastapi>=0.115.12",
+    "fluent-runtime~=0.4.0",
+    "greenlet>=3.2.2",
+    "loguru~=0.7.3",
+    "msgspec~=0.19.0",
+    "pydantic-settings~=2.9.1",
+    "redis~=6.1.0",
+    "remnawave-api~=1.1.2",
+    "uvicorn>=0.34.2",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-aiogram = "^3.20.0.post0"
-aiogram-dialog = "^2.3.1"
-alembic = "^1.15.2"
-fastapi = "^0.115.12"
-pydantic-settings = "^2.9.1"
-redis = "^6.1.0"
-uvicorn = "^0.34.2"
-asyncpg = "^0.30.0"
-celery = "^5.5.2"
-aiogram-i18n = "^1.4"
-fluent-runtime = "^0.4.0"
-msgspec = "^0.19.0"
-greenlet = "^3.2.2"
-remnawave-api = "^1.1.2"
+[project.urls]
+homepage = "https://t.me/@remna_shop"
+repository = "https://github.com/snoups/remnashop"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+dev-dependencies = [
+    "mypy>=1.14.1",
+    "ruff>=0.8.6",
+    "pytest>=8.4.0",
+    "watchfiles>=1.1.0",
+    "types-cachetools",
+]
+
+[tool.black]
+line-length = 100
+exclude = "\\.?venv|\\.?tests"
+
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+lint.select = [
+    "C",
+    "DTZ",
+    "E",
+    "F",
+    "I",
+    "ICN",
+    "N",
+    "PLC",
+    "PLE",
+    "Q",
+    "T",
+    "W",
+    "YTT",
+]
+lint.ignore = ["N805"]
+exclude = [".venv", ".idea"]
+
+[tool.mypy]
+plugins = ["sqlalchemy.ext.mypy.plugin", "pydantic.mypy"]
+exclude = ["venv", ".venv", ".idea", "tests"]
+warn_unused_configs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
+
+[[tool.mypy.overrides]]
+module = ["app.bot.handlers.*"]
+strict_optional = false
+warn_return_any = false
+disable_error_code = ["union-attr"]
+
+[[tool.mypy.overrides]]
+module = "remnawave_api.*"
+ignore_missing_imports = true

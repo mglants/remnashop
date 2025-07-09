@@ -1,12 +1,10 @@
-from typing import Any, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable
 
-from aiogram.types import CallbackQuery, Message
-from aiogram_dialog.utils import remove_intent_id
+from aiogram.types import TelegramObject
 
-from app.bot.models import AppContainer
 from app.core.constants import APP_CONTAINER_KEY, USER_KEY
+from app.core.container import AppContainer
 from app.core.enums import MiddlewareEventType
-from app.core.formatters import format_log_user
 from app.db.models.dto import UserDto
 
 from .base import EventTypedMiddleware
@@ -17,49 +15,22 @@ class MaintenanceMiddleware(EventTypedMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[Union[Message, CallbackQuery], dict[str, Any]], Awaitable[Any]],
-        event: Union[Message, CallbackQuery],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        user: Optional[UserDto] = data.get(USER_KEY)
-
-        if user is None:
-            return
-
         container: AppContainer = data[APP_CONTAINER_KEY]
+        user: UserDto = data[USER_KEY]
+
         maintenance_service = container.services.maintenance
+        notification_service = container.services.notification
+        access_allowed = await maintenance_service.check_access(user=user, event=event)
 
-        if not await maintenance_service.is_active():
-            return await handler(event, data)
-
-        if user.is_privileged:
-            self.logger.debug(f"{format_log_user(user)} Access allowed (privileged)")
-            return await handler(event, data)
-
-        if await maintenance_service.is_global_mode():
-            self.logger.info(f"{format_log_user(user)} Access denied (global)")
-            await container.services.notification.notify_user(
-                telegram_id=user.telegram_id,
+        if not access_allowed:
+            await notification_service.notify_user(
+                user=user,
                 text_key="ntf-maintenance-denied-global",
             )
             return
 
-        if await maintenance_service.is_purchase_mode() and self._is_purchase_action(event):
-            self.logger.warning(f"{format_log_user(user)} Access denied (purchase)")
-            await container.services.notification.notify_user(
-                telegram_id=user.telegram_id,
-                text_key="ntf-maintenance-denied-purchase",
-            )
-
-            if await maintenance_service.should_notify_user(user.telegram_id):
-                await maintenance_service.register_waiting_user(user.telegram_id)
-                self.logger.debug(f"{format_log_user(user)} Added to waiting list")
-
-            return
-
-    def _is_purchase_action(self, event: Union[Message, CallbackQuery]) -> bool:
-        if not isinstance(event, (CallbackQuery)) or event.data is None:
-            return False
-
-        callback_data = remove_intent_id(event.data)
-        # TODO: Find purchase actions
+        return await handler(event, data)

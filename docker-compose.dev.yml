@@ -1,4 +1,0 @@
-services:
-  remnashop:
-      image: ghcr.io/snoups/remnashop:dev
-      container_name: "remnashop_dev"

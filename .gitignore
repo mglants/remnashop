@@ -1,22 +1,36 @@
-# Byte-compiled / optimized / DLL files
+# Project
+.idea/
+.vscode/
+.code-workspace
+data/*
+tests
+.DS_Store
+traefik
+logs/*
+!logs/.gitkeep
+ftl.py
+
+# Environment
+.venv/
+.env
+venv/
+docker-compose.yml
+uv.lock
+.tests
+
+# Cache
 __pycache__/
 *.py[cod]
-*$py.class
+.cache/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage/
 
-# Environments
-.env
-.venv
-
-# PyCharm
-.idea/
-
-# System
-.DS_Store
-
-# Logs
-*.log
-*.zip
-*.gz
-
-# Proxy
-traefik
+# Build
+build/
+_build/
+dist/
+site/
+*.egg-info/
+*.egg

@@ -1,59 +1,25 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-from app.factories.services import create_services
-
-if TYPE_CHECKING:
-    from app.core.config import AppConfig
-
-from aiogram import Bot, Dispatcher
+from aiogram import Dispatcher
+from aiogram.filters import ExceptionTypeFilter
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram_dialog import setup_dialogs
-from redis.asyncio import Redis
+from aiogram_dialog.api.exceptions import UnknownIntent, UnknownState
 
-from app.bot.filters import IsPrivate
-from app.bot.models import AppContainer
+from app.bot.commands import commands_delete, commands_setup
+from app.bot.filters import PrivateFilter
 from app.bot.routers import routers
-from app.core import mjson
+from app.bot.routers.extra.errors import on_unknown_intent, on_unknown_state
+from app.bot.webhook import webhook_shutdown, webhook_startup
+from app.core.container import AppContainer
+from app.core.utils import mjson
+from app.factories.middlewares import Middlewares
 
-from .middlewares import create_middlewares
-from .redis import create_redis
-from .remnawave import create_remnawave
-from .session_pool import create_session_pool
 
-
-def create_dispatcher(bot: Bot, config: AppConfig) -> Dispatcher:
-    key_builder = DefaultKeyBuilder(with_destiny=True)
-    redis: Redis = create_redis(url=config.redis.dsn())
-
-    middlewares = create_middlewares(config)
-    i18n_middleware = middlewares.inner[0]  # I18nMiddleware is the first in inner middlewares
-
-    session_pool = create_session_pool(config)
-    remnawave = create_remnawave(config)
-    services = create_services(
-        bot=bot,
-        config=config,
-        session_pool=session_pool,
-        redis=redis,
-        i18n=i18n_middleware,
-    )
-
-    container = AppContainer(
-        config=config,
-        i18n=i18n_middleware,
-        session_pool=session_pool,
-        redis=redis,
-        remnawave=remnawave,
-        services=services,
-    )
-
+def create_dispatcher(container: AppContainer, middlewares: Middlewares) -> Dispatcher:
     dispatcher = Dispatcher(
         storage=RedisStorage(
-            redis=redis,
-            key_builder=key_builder,
+            redis=container.redis,
+            key_builder=DefaultKeyBuilder(with_destiny=True),
             json_loads=mjson.decode,
             json_dumps=mjson.encode,
         ),
@@ -69,6 +35,15 @@ def create_dispatcher(bot: Bot, config: AppConfig) -> Dispatcher:
     for mw in middlewares.inner:
         mw.setup_inner(router=dispatcher)
 
-    dispatcher.message.filter(IsPrivate())
+    dispatcher.errors.register(on_unknown_intent, ExceptionTypeFilter(UnknownIntent))
+    dispatcher.errors.register(on_unknown_state, ExceptionTypeFilter(UnknownState))
+
+    dispatcher.startup.register(webhook_startup)
+    dispatcher.startup.register(commands_setup)
+
+    dispatcher.shutdown.register(webhook_shutdown)
+    dispatcher.shutdown.register(commands_delete)
+
+    dispatcher.message.filter(PrivateFilter())  # global filter allows only private chats
     dispatcher.include_routers(*routers)
     return dispatcher

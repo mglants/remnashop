@@ -1,13 +1,15 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.kbd import Column, Row, Select, Start, SwitchTo
 from magic_filter import F
 
 from app.bot.states import DashboardRemnashop, RemnashopNotifications
 from app.bot.widgets import Banner, I18nFormat, IgnoreUpdate
-from app.core.enums import BannerName
+from app.core.enums import BannerName, SystemNotificationType, UserNotificationType
 
 from .getters import system_types_getter, user_types_getter
-from .handlers import on_type_selected
+from .handlers import on_system_type_selected, on_user_type_selected
 
 notifications = Window(
     Banner(BannerName.DASHBOARD),
@@ -50,7 +52,8 @@ user = Window(
             id="select_type",
             item_id_getter=lambda item: item["type"],
             items="types",
-            on_click=on_type_selected,
+            type_factory=UserNotificationType,
+            on_click=on_user_type_selected,
         ),
     ),
     Row(
@@ -78,7 +81,8 @@ system = Window(
             id="select_type",
             item_id_getter=lambda item: item["type"],
             items="types",
-            on_click=on_type_selected,
+            type_factory=SystemNotificationType,
+            on_click=on_system_type_selected,
         ),
     ),
     Row(
@@ -93,7 +97,7 @@ system = Window(
     getter=system_types_getter,
 )
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     notifications,
     user,
     system,

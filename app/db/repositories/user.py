@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.sql.functions import count
 
 from app.core.enums import UserRole
-from app.db.models.sql import User
+from app.db.models import User
 
 from .base import BaseRepository
 

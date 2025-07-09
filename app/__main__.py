@@ -1,124 +1,47 @@
-import json
-
-from pydantic import ValidationError
-
-from app.bot.models.containers import AppContainer
-from app.core.config import AppConfig
-from app.core.enums import MaintenanceMode, SystemNotificationType
-from app.core.logger import setup_logging
-
-config = AppConfig.get()
-setup_logging(config.logging)
-
-import logging
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
-
 import uvicorn
-from aiogram import Bot, Dispatcher
-from aiogram.types import Update
-from fastapi import FastAPI, Request
-from starlette.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 
-from app.bot.commands import commands_delete, commands_setup
-from app.bot.webhook import webhook_shutdown, webhook_startup
-from app.core.constants import APP_CONTAINER_KEY, BOT_KEY, HEADER_SECRET_TOKEN
-from app.factories import create_bot, create_dispatcher
-
-logger = logging.getLogger(__name__)
-
-
-@asynccontextmanager
-async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
-    logger.info("Starting application")
-
-    bot: Bot = create_bot(token=config.bot.token.get_secret_value())
-    dispatcher: Dispatcher = create_dispatcher(bot, config)
-    container: AppContainer = dispatcher.workflow_data[APP_CONTAINER_KEY]
-    await container.services.notification_settings.get_or_create()
-    notification = container.services.notification
-    maintenance = container.services.maintenance
-
-    application.state.bot = bot
-    application.state.dispatcher = dispatcher
-
-    await webhook_startup(bot, dispatcher, config)
-    await commands_setup(bot, config)
-
-    mode = await maintenance.get_mode()
-    if mode != MaintenanceMode.OFF:
-        logger.warning(f"Bot in maintenance mode: '{mode}'")
-
-    await notification.system_notify(
-        notification_type=SystemNotificationType.BOT_LIFETIME,
-        text_key="ntf-event-bot-startup",
-        mode=mode,
-    )
-
-    logger.info("Bot started successfully")
-    yield
-
-    await notification.system_notify(
-        notification_type=SystemNotificationType.BOT_LIFETIME,
-        text_key="ntf-event-bot-shutdown",
-    )
-
-    await commands_delete(bot, config)
-    await webhook_shutdown(bot, config)
-
-    logger.info("Stopping application")
-
-
-app = FastAPI(
-    lifespan=lifespan,
-    docs_url=None,
-    redoc_url=None,
-    openapi_url=None,
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=config.origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+from app.core.config import AppConfig
+from app.core.logger import setup_logger
+from app.factories import (
+    create_app,
+    create_bot,
+    create_container,
+    create_dispatcher,
+    create_middlewares,
+    create_redis,
+    create_remnawave,
+    create_session_pool,
 )
 
 
-@app.post(config.bot.webhook_path)
-async def webhook(request: Request, update: Update) -> Optional[dict]:
-    bot: Bot = request.app.state.bot
-    dispatcher: Dispatcher = request.app.state.dispatcher
+def build_application() -> FastAPI:
+    setup_logger()
+    config = AppConfig.get()
 
-    secret_token = request.headers.get(HEADER_SECRET_TOKEN)
+    redis = create_redis(url=config.redis.dsn)
+    session_pool = create_session_pool(config)
 
-    if not secret_token:
-        logger.error("Missing secret token")
-        return {"status": "error", "message": "Missing secret token"}
+    bot = create_bot(token=config.bot.token.get_secret_value())
+    remnawave = create_remnawave(config)
+    middlewares = create_middlewares(config)
+    i18n_middleware = middlewares.get_i18n_middleware()
 
-    if secret_token != config.bot.secret_token.get_secret_value():
-        logger.error("Wrong secret token")
-        return {"status": "error", "message": "Wrong secret token"}
+    container = create_container(
+        bot=bot,
+        config=config,
+        redis=redis,
+        session_pool=session_pool,
+        i18n=i18n_middleware,
+        remnawave=remnawave,
+    )
 
-    try:
-        request_data = await request.json()
-        update = Update.model_validate(request_data, context={BOT_KEY: bot})
+    dispatcher = create_dispatcher(container, middlewares)
+    app: FastAPI = create_app(dispatcher=dispatcher, bot=bot, config=config)
+    return app
 
-        await dispatcher.feed_webhook_update(bot, update)
-        return {"ok": True}
-    except json.JSONDecodeError as exception:
-        logger.error(
-            f"Invalid JSON in webhook request: {exception}. "
-            f"Request body: {await request.body()}"
-        )
-        return {"status": "error", "message": "Invalid JSON format"}
-    except ValidationError as exception:
-        logger.error(f"Webhook update validation error: {exception}. Data: {request_data}")
-        return {"status": "error", "message": "Invalid update format"}
-    except Exception as exception:
-        logger.exception(f"Unhandled exception during webhook update processing: {exception}")
-        return {"status": "error", "message": "Internal server error"}
 
+app: FastAPI = build_application()
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=config.bot.host, port=config.bot.port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

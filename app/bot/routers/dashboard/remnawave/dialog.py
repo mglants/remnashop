@@ -1,3 +1,5 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Row, Start, SwitchTo
 
@@ -114,7 +116,7 @@ inbounds = Window(
 )
 
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     remnawave,
     users,
     hosts,

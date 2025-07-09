@@ -1,12 +1,8 @@
-from __future__ import annotations
-
 from typing import Any, Optional, TypeVar, Union, cast
 
 from sqlalchemy import ColumnExpressionArgument, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
-
-from app.db.uow import UoW
 
 T = TypeVar("T", bound=Any)
 ColumnClauseType = Union[
@@ -17,11 +13,9 @@ ColumnClauseType = Union[
 
 class BaseRepository:
     session: AsyncSession
-    uow: UoW
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        self.uow = UoW(session=session)
 
     async def _get(
         self,
@@ -55,7 +49,6 @@ class BaseRepository:
             query = query.returning(model)
 
         result = await self.session.execute(query)
-        await self.session.commit()
         return result.scalar_one_or_none() if load_result else None
 
     async def _delete(
@@ -64,5 +57,13 @@ class BaseRepository:
         *conditions: ColumnExpressionArgument[Any],
     ) -> bool:
         result = await self.session.execute(delete(model).where(*conditions))
-        await self.session.commit()
         return cast(bool, result.rowcount > 0)
+
+    def add(self, instance: T) -> None:
+        self.session.add(instance)
+
+    async def merge(self, instance: T) -> T:
+        return await self.session.merge(instance)
+
+    async def delete_instance(self, instance: T) -> None:
+        await self.session.delete(instance)

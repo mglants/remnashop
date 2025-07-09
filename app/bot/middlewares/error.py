@@ -1,61 +1,55 @@
-from typing import Any, Awaitable, Callable, Optional
+import traceback
+from typing import Any, Awaitable, Callable, Optional, cast
 
-from aiogram.exceptions import (
-    TelegramBadRequest,
-    TelegramForbiddenError,
-    TelegramNotFound,
-)
-from aiogram.types import ErrorEvent
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import BufferedInputFile, ErrorEvent, TelegramObject
 from aiogram.types import User as AiogramUser
-from aiogram.utils.formatting import Bold, Text
-from aiogram_dialog.api.exceptions import UnknownState
+from loguru import logger
 
-from app.bot.models.containers import AppContainer
 from app.core.constants import APP_CONTAINER_KEY
-from app.core.enums import MiddlewareEventType
+from app.core.container import AppContainer
+from app.core.enums import MediaType, MiddlewareEventType
 
 from .base import EventTypedMiddleware
 
 
-# TODO: REWORK
 class ErrorMiddleware(EventTypedMiddleware):
     __event_types__ = [MiddlewareEventType.ERROR]
 
     async def __call__(
         self,
-        handler: Callable[[ErrorEvent, dict[str, Any]], Awaitable[Any]],
-        event: ErrorEvent,
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
         aiogram_user: Optional[AiogramUser] = self._get_aiogram_user(event)
+        user_id = str(aiogram_user.id) if aiogram_user else None
+        user_name = aiogram_user.full_name if aiogram_user else None
+
         container: AppContainer = data[APP_CONTAINER_KEY]
+        event = cast(ErrorEvent, event)
 
-        if aiogram_user:
-            user = container.services.user.get(telegram_id=aiogram_user.id)
-
-        if isinstance(event.exception, TelegramForbiddenError):
-            self.logger.info(f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Blocked the bot")
-            await container.services.user.set_bot_blocked(user, blocked=True)
-        elif isinstance(event.exception, TelegramBadRequest):
-            self.logger.warning(f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Bad request")
-        elif isinstance(event.exception, TelegramNotFound):
-            self.logger.warning(f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Not found")
-        elif isinstance(event.exception, UnknownState):
-            self.logger.warning(
-                f"[User:{aiogram_user.id} ({aiogram_user.full_name})] Unknown state"
-            )
-        else:
-            self.logger.exception(f"Update: {event.update}\nException: {event.exception}")
+        logger.exception(f"Update: {event.update}\nException: {event.exception}")
 
         try:
-            text = Text(
-                Bold((type(event.exception).__name__)), f": {str(event.exception)[:1021]}..."
+            text = f"{type(event.exception).__name__}: {str(event.exception)[:1021]}..."
+            await container.services.notification.notify_super_dev(
+                dev=await container.services.user.get(telegram_id=container.config.bot.dev_id),
+                text_key="ntf-event-error",
+                media=BufferedInputFile(
+                    file=traceback.format_exc().encode(),
+                    filename=f"error_{event.update.update_id}.txt",
+                ),
+                media_type=MediaType.DOCUMENT,
+                user=bool(aiogram_user),
+                id=user_id,
+                name=user_name,
+                error=text,
             )
-            await container.services.notification.notify_super_dev(text_key=text.as_html())
 
         except TelegramBadRequest as exception:
-            self.logger.warning(f"Failed to send error details: {exception}")
+            logger.warning(f"Failed to send error details: {exception}")
         except Exception as exception:
-            self.logger.error(f"Unexpected error in error handler: {exception}")
+            logger.error(f"Unexpected error in error handler: {exception}")
 
         return await handler(event, data)

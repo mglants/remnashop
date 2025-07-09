@@ -1,7 +1,10 @@
 import asyncio
 from logging.config import fileConfig
+from typing import Iterable, Optional, Union
 
 from alembic import context
+from alembic.operations import MigrationScript
+from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -18,9 +21,15 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def process_revision_directives(context, revision, directives) -> None:
+def process_revision_directives(
+    context: MigrationContext,
+    revision: Union[str, Iterable[Optional[str]], Iterable[str]],
+    directives: list[MigrationScript],
+) -> None:
     migration_script = directives[0]
-    head_revision = ScriptDirectory.from_config(context.config).get_current_head()
+
+    script_directory = ScriptDirectory.from_config(config)
+    head_revision = script_directory.get_current_head()
 
     if head_revision is None:
         new_rev_id = 1
@@ -57,7 +66,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    connectable: AsyncEngine = create_async_engine(url=db_config.dsn())
+    connectable: AsyncEngine = create_async_engine(url=db_config.dsn)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

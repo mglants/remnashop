@@ -1,3 +1,5 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Select, Start, SwitchTo
 from magic_filter import F
@@ -120,7 +122,7 @@ maintenance = Window(
     getter=maintenance_getter,
 )
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     dashboard,
     statistics,
     maintenance,

@@ -1,5 +1,6 @@
-from .is_private import IsPrivate
+from .private import PrivateFilter
 
 __all__ = [
-    "IsPrivate",
+    "PrivateFilter",
+    # TODO: AdminFilter
 ]

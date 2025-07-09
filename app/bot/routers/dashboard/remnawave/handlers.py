@@ -1,22 +1,19 @@
-import logging
-
 from aiogram.types import CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import Button
+from loguru import logger
 
-from app.bot.models.containers import AppContainer
 from app.bot.states import DashboardRemnawave
 from app.core.constants import APP_CONTAINER_KEY, USER_KEY
-from app.db.models.dto.user import UserDto
-
-logger = logging.getLogger(__name__)
+from app.core.container import AppContainer
+from app.db.models.dto import UserDto
 
 
 async def start_remnawave_window(
     callback: CallbackQuery,
     widget: Button,
     dialog_manager: DialogManager,
-):
+) -> None:
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
 
@@ -24,8 +21,8 @@ async def start_remnawave_window(
         response = await container.remnawave.system.get_stats()
     except Exception as exception:
         logger.error(f"Remnawave: {exception}")
-        container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+        await container.services.notification.notify_user(
+            user=user,
             text_key="ntf-error-connect-remnawave",
         )
         return

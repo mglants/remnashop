@@ -3,6 +3,10 @@ btn = Кнопка
 msg = Сообщение
 unlimited = ∞
 
+# Commands
+cmd-start = Перезапустить бота
+cmd-help = Помощь
+
 # Used to create a blank line between elements
 space = {" "}
 separator = {"\u00A0"}

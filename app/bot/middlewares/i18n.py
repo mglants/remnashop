@@ -1,16 +1,16 @@
-from typing import Any, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable, Optional
 
-from aiogram.types import CallbackQuery, ErrorEvent, Message
+from aiogram.types import TelegramObject
 from fluent.runtime import FluentLocalization
+from loguru import logger
 
 from app.core.constants import I18N_FORMATTER_KEY, USER_KEY
 from app.core.enums import Locale, MiddlewareEventType
-from app.core.formatters import format_log_user
-from app.db.models import UserDto
+from app.core.utils.formatters import format_log_user
+from app.core.utils.types import I18nFormatter
+from app.db.models.dto import UserDto
 
 from .base import EventTypedMiddleware
-
-I18nFormatter = Callable[[str, Optional[dict[str, Any]]], str]
 
 
 class I18nMiddleware(EventTypedMiddleware):
@@ -26,21 +26,18 @@ class I18nMiddleware(EventTypedMiddleware):
         locales: dict[Locale, FluentLocalization],
         default_locale: Locale,
     ) -> None:
-        super().__init__()
         self.locales = locales
         self.default_locale = default_locale
-        self.logger.debug(f"Available locales: {list(locales.keys())}")
+        logger.debug(f"Available locales: {list(locales.keys())}")
+        super().__init__()
 
     async def __call__(
         self,
-        handler: Callable[
-            [Union[Message, CallbackQuery, ErrorEvent], dict[str, Any]],
-            Awaitable[Any],
-        ],
-        event: Union[Message, CallbackQuery, ErrorEvent],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        user: Optional[UserDto] = data.get(USER_KEY)
+        user: UserDto = data[USER_KEY]
         data[I18N_FORMATTER_KEY] = self.get_formatter(user=user)
         return await handler(event, data)
 
@@ -53,24 +50,26 @@ class I18nMiddleware(EventTypedMiddleware):
 
         if locale is not None:
             target_locale = locale
-            # self.logger.debug(f"Using explicitly provided locale: '{target_locale}'")
+            # logger.debug(f"Using explicitly provided locale: '{target_locale}'")
         elif user is not None and user.language in self.locales:
-            target_locale = user.language
-            # self.logger.debug(f"{format_log_user(user)} Using locale '{target_locale}'")
+            target_locale = Locale(user.language)
+            # logger.debug(f"{format_log_user(user)} Using locale '{target_locale}'")
         else:
             target_locale = self.default_locale
+
             if user is None:
-                self.logger.debug(
-                    f"User not provided or user's language not supported. Using default locale: '{self.default_locale}'"
+                logger.debug(
+                    f"User not provided or user's language not supported. "
+                    f"Using default locale: '{self.default_locale}'"
                 )
             else:
-                self.logger.warning(
+                logger.warning(
                     f"Locale '{user.language}' for user '{user.telegram_id}' not supported. "
                     f"Using default locale: '{self.default_locale}'"
                 )
 
         if target_locale not in self.locales:
-            self.logger.error(
+            logger.error(
                 f"Resolved locale '{target_locale}' is not available. "
                 f"Falling back to default: '{self.default_locale}'"
             )

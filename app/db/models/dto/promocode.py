@@ -1,13 +1,17 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
+from pydantic import Field
+
 from app.core.enums import PromocodeType
+from app.core.utils.time import datetime_now
 
 from .base import TrackableModel
-from .timestamp import TimestampSchema
 
 
-class PromocodeSchema(TrackableModel):
+class PromocodeDto(TrackableModel):
+    id: Optional[int] = Field(default=None, frozen=True)
+
     code: str
     type: PromocodeType
 
@@ -21,9 +25,8 @@ class PromocodeSchema(TrackableModel):
 
     activated_by: Optional[int] = None
 
-
-class PromocodeDto(PromocodeSchema, TimestampSchema):
-    id: int
+    created_at: Optional[datetime] = Field(default=None, frozen=True)
+    updated_at: Optional[datetime] = Field(default=None, frozen=True)
 
     @property
     def is_redeemed(self) -> bool:
@@ -35,7 +38,7 @@ class PromocodeDto(PromocodeSchema, TimestampSchema):
 
     @property
     def expires_at(self) -> Optional[datetime]:
-        if self.lifetime is not None:
+        if self.lifetime is not None and self.created_at is not None:
             return self.created_at + timedelta(days=self.lifetime)
         return None
 
@@ -43,11 +46,15 @@ class PromocodeDto(PromocodeSchema, TimestampSchema):
     def is_expired(self) -> bool:
         if self.expires_at is None:
             return False
-        return datetime.now(tz=self.created_at.tzinfo) > self.expires_at
+
+        current_time = datetime_now()
+        return current_time > self.expires_at
 
     @property
     def time_left(self) -> Optional[timedelta]:
         if self.expires_at is None:
             return None
-        delta = self.expires_at - datetime.now(tz=self.created_at.tzinfo)
+
+        current_time = datetime_now()
+        delta = self.expires_at - current_time
         return delta if delta.total_seconds() > 0 else timedelta(seconds=0)

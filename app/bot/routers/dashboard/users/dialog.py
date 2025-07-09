@@ -1,3 +1,5 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import (
@@ -134,7 +136,7 @@ unblock_all = Window(
 )
 
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     users,
     search,
     blacklist,

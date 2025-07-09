@@ -1,10 +1,11 @@
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, cast
 
-from aiogram.types import Message
+from aiogram.types import Message, TelegramObject
+from loguru import logger
 
 from app.core.constants import USER_KEY
 from app.core.enums import Command, MiddlewareEventType
-from app.core.formatters import format_log_user
+from app.core.utils.formatters import format_log_user
 from app.db.models.dto import UserDto
 
 from .base import EventTypedMiddleware
@@ -15,17 +16,15 @@ class GarbageMiddleware(EventTypedMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[Message, dict[str, Any]], Awaitable[Any]],
-        event: Message,
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        user: Optional[UserDto] = data.get(USER_KEY)
+        message = cast(Message, event)
+        user: UserDto = data[USER_KEY]
 
-        if user is None:
-            return
-
-        if event.text != f"/{Command.START.value.command}":
-            await event.delete()
-            self.logger.debug(f"{format_log_user(user)} Message deleted")
+        if message.text != f"/{Command.START.value.command}":
+            await message.delete()
+            logger.debug(f"{format_log_user(user)} Message deleted")
 
         return await handler(event, data)

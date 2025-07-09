@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.bot.middlewares.i18n import I18nFormatter
     from app.db.models.dto import UserDto
 
 from math import ceil
 from typing import Union
 
-from .enums import ByteUnit, TimeUnit
+from app.core.utils.types import I18nFormatter
+
+from ..i18n_keys import ByteUnitKey, TimeUnitKey
 
 
 def format_log_user(user: UserDto) -> str:
@@ -20,12 +21,12 @@ def format_bytes(
     value: int,
     i18n_formatter: I18nFormatter,
     round_up: bool = False,
-    min_unit: ByteUnit = ByteUnit.GIGABYTE,
+    min_unit: ByteUnitKey = ByteUnitKey.GIGABYTE,
 ) -> str:
     size = float(value)
     started = False
 
-    for unit in ByteUnit:
+    for unit in ByteUnitKey:
         if unit == min_unit:
             started = True
 
@@ -43,7 +44,7 @@ def format_bytes(
         size /= 1024
 
     size_str = str(int(size)) if size.is_integer() else str(round(size, 2))
-    unit_str = i18n_formatter(str(ByteUnit.TERABYTE), {"value": float(size_str)})
+    unit_str = i18n_formatter(str(ByteUnitKey.TERABYTE), {"value": float(size_str)})
     return f"{size_str} {unit_str}"
 
 
@@ -61,9 +62,9 @@ def format_duration(
     round_up: bool = False,
 ) -> str:
     units = [
-        (TimeUnit.DAY, 86400),
-        (TimeUnit.HOUR, 3600),
-        (TimeUnit.MINUTE, 60),
+        (TimeUnitKey.DAY, 86400),
+        (TimeUnitKey.HOUR, 3600),
+        (TimeUnitKey.MINUTE, 60),
     ]
 
     remaining = int(seconds)
@@ -85,7 +86,7 @@ def format_duration(
                     remaining %= unit_seconds2
             return " ".join(parts)
 
-    return f"0 {i18n_formatter(TimeUnit.MINUTE.value, {'value': 0})}"
+    return f"0 {i18n_formatter(TimeUnitKey.MINUTE.value, {'value': 0})}"
 
 
 def format_country_code(code: str) -> str:

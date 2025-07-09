@@ -1,3 +1,5 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.kbd import Button, ListGroup, Row, Start, SwitchTo
 from aiogram_dialog.widgets.text import Format
@@ -18,11 +20,6 @@ remnashop = Window(
     Banner(BannerName.DASHBOARD),
     I18nFormat("msg-remnashop-main"),
     Row(
-        SwitchTo(
-            text=I18nFormat("btn-remnashop-admins"),
-            id="admins",
-            state=DashboardRemnashop.ADMINS,
-        ),
         SwitchTo(
             text=I18nFormat("btn-remnashop-admins"),
             id="admins",
@@ -86,12 +83,12 @@ admins = Window(
             Button(
                 text=Format("{item.telegram_id} ({item.name})"),
                 id="select_user",
-                on_click=on_user_selected,
+                on_click=on_user_selected,  # type: ignore
             ),
             Button(
                 text=Format("❌"),
                 id="remove_role",
-                on_click=on_user_role_removed,
+                on_click=on_user_role_removed,  # type: ignore
             ),
         ),
         id="admins_list",
@@ -111,7 +108,7 @@ admins = Window(
     getter=admins_getter,
 )
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     remnashop,
     admins,
 )

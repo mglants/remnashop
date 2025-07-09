@@ -1,10 +1,8 @@
-import logging
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from aiogram_dialog import DialogManager
+from loguru import logger
 from pydantic import BaseModel, ValidationError
-
-logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -23,12 +21,12 @@ class DialogDataAdapter:
         except ValidationError:
             return None
 
-    def save(self, model: BaseModel) -> dict:
+    def save(self, model: BaseModel) -> dict[str, Any]:
         key = model.__class__.__name__.lower()
         data = model.model_dump()
         try:
             self.dialog_manager.dialog_data[key] = data
             logger.debug(f"Saved model '{key}' data successfully")
         except Exception as exception:
-            logger.error(f"Error saving model '{key}': {exception}")
+            logger.error(f"Failed saving model '{key}'. Error: {exception}")
         return data

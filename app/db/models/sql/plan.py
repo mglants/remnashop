@@ -24,6 +24,7 @@ class Plan(Base, TimestampMixin):
     __tablename__ = "plans"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
     name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     type: Mapped[PlanType] = mapped_column(Enum(PlanType), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

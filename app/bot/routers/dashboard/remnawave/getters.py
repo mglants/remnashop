@@ -1,3 +1,5 @@
+from typing import Any
+
 from aiogram_dialog import DialogManager
 from remnawave_api.models import (
     HostsResponseDto,
@@ -6,46 +8,44 @@ from remnawave_api.models import (
     StatisticResponseDto,
 )
 
-from app.bot.middlewares.i18n import I18nFormatter
-from app.bot.models import AppContainer, SystemData
 from app.core.constants import UNLIMITED
-from app.core.formatters import (
+from app.core.container import AppContainer
+from app.core.utils.formatters import (
     format_bytes,
     format_country_code,
     format_duration,
     format_percent,
 )
+from app.core.utils.types import I18nFormatter
 
 
 async def system_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
     i18n_formatter: I18nFormatter,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     stats: StatisticResponseDto = await container.remnawave.system.get_stats()
 
-    data = SystemData(
-        cpu_cores=stats.cpu.physical_cores,
-        cpu_threads=stats.cpu.cores,
-        ram_used=format_bytes(value=stats.memory.active, i18n_formatter=i18n_formatter),
-        ram_total=format_bytes(value=stats.memory.total, i18n_formatter=i18n_formatter),
-        ram_used_percent=format_percent(part=stats.memory.active, whole=stats.memory.total),
-        uptime=format_duration(
+    return {
+        "cpu_cores": str(stats.cpu.physical_cores),
+        "cpu_threads": str(stats.cpu.cores),
+        "ram_used": format_bytes(value=stats.memory.active, i18n_formatter=i18n_formatter),
+        "ram_total": format_bytes(value=stats.memory.total, i18n_formatter=i18n_formatter),
+        "ram_used_percent": format_percent(part=stats.memory.active, whole=stats.memory.total),
+        "uptime": format_duration(
             seconds=stats.uptime,
             i18n_formatter=i18n_formatter,
             round_up=True,
         ),
-    )
-
-    return data.model_dump()
+    }
 
 
 async def users_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     stats: StatisticResponseDto = await container.remnawave.system.get_stats()
 
     return {
@@ -65,8 +65,8 @@ async def hosts_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
     i18n_formatter: I18nFormatter,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     hosts: HostsResponseDto = await container.remnawave.hosts.get_all_hosts()
 
     hosts_text = "\n".join(
@@ -90,8 +90,8 @@ async def nodes_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
     i18n_formatter: I18nFormatter,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     nodes: NodesResponseDto = await container.remnawave.nodes.get_all_nodes()
 
     nodes_text = "\n".join(
@@ -104,7 +104,7 @@ async def nodes_getter(
                 "address": node.address,
                 "port": str(node.port),
                 "xray_uptime": format_duration(
-                    seconds=str(node.xray_uptime),
+                    seconds=node.xray_uptime,
                     i18n_formatter=i18n_formatter,
                     round_up=True,
                 ),
@@ -134,8 +134,8 @@ async def inbounds_getter(
     dialog_manager: DialogManager,
     container: AppContainer,
     i18n_formatter: I18nFormatter,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     inbounds: InboundsResponseDto = await container.remnawave.inbounds.get_inbounds()
 
     inbounds_text = "\n".join(

@@ -1,0 +1,37 @@
+services:
+  remnashop-db-local:
+    image: postgres:17
+    container_name: "remnashop-db-local"
+    hostname: remnashop-db-local
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - TZ=UTC
+    volumes:
+      - remnashop-db-local-data:/var/lib/postgresql/data
+    restart: always
+
+  remnashop-redis-local:
+    image: redis:8
+    container_name: remnashop-redis-local
+    hostname: remnashop-redis-local
+    command: [ "--requirepass", "${REDIS_PASSWORD}" ]
+    volumes:
+      - remnashop-redis-local-data:/data
+    restart: always
+
+volumes:
+  remnashop-db-local-data:
+    name: remnashop-db-local-data
+    driver: local
+    external: false
+    
+  remnashop-redis-local-data:
+    name: remnashop-redis-local-data
+    driver: local
+    external: false

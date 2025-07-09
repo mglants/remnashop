@@ -55,10 +55,13 @@ services:
       interval: 3s
       timeout: 10s
       retries: 3
+    command: [ "--requirepass", "${REDIS_PASSWORD}" ]
 
 networks:
   remnashop-network:
-    external: true
+    name: remnashop-network
+    driver: bridge
+    external: false
 
 volumes:
   remnashop-db-data:

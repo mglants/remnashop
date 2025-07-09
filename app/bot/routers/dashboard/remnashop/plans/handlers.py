@@ -1,20 +1,17 @@
-import logging
 from decimal import Decimal, InvalidOperation
 
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode, SubManager
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
+from loguru import logger
 
-from app.bot.models import AppContainer
 from app.bot.states import RemnashopPlans
-from app.core.adapter import DialogDataAdapter
 from app.core.constants import APP_CONTAINER_KEY, USER_KEY
+from app.core.container import AppContainer
 from app.core.enums import Currency, PlanAvailability, PlanType
-from app.db.models.dto import PlanDurationSchema, PlanPriceSchema, PlanSchema
-from app.db.models.dto.user import UserDto
-
-logger = logging.getLogger(__name__)
+from app.core.utils.adapter import DialogDataAdapter
+from app.db.models.dto import PlanDto, PlanDurationDto, PlanPriceDto, UserDto
 
 
 async def on_name_input(
@@ -28,15 +25,24 @@ async def on_name_input(
 
     if message.text is None:
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-plan-wrong-name",
         )
         return
 
-    # TODO: Check the availability of a plan with that name
+    if await container.services.plan.get_by_name(name=message.text):
+        await container.services.notification.notify_user(
+            user=user,
+            text_key="ntf-plan-wrong-name",
+        )
+        return
 
     adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
+    plan = adapter.load(PlanDto)
+
+    if not plan:
+        return
+
     plan.name = message.text
     adapter.save(plan)
 
@@ -44,26 +50,34 @@ async def on_name_input(
 
 
 async def on_type_selected(
-    message: Message,
-    widget: Select,
+    callback: CallbackQuery,
+    widget: Select[PlanType],
     dialog_manager: DialogManager,
     selected_type: PlanType,
 ) -> None:
     adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
+    plan = adapter.load(PlanDto)
+
+    if not plan:
+        return
+
     plan.type = selected_type
     adapter.save(plan)
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
 
 
 async def on_availability_selected(
-    message: Message,
-    widget: Select,
+    callback: CallbackQuery,
+    widget: Select[PlanAvailability],
     dialog_manager: DialogManager,
     selected_availability: PlanAvailability,
 ) -> None:
     adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
+    plan = adapter.load(PlanDto)
+
+    if not plan:
+        return
+
     plan.availability = selected_availability
     adapter.save(plan)
     await dialog_manager.switch_to(state=RemnashopPlans.PLAN)
@@ -75,7 +89,11 @@ async def on_active_toggle(
     dialog_manager: DialogManager,
 ) -> None:
     adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
+    plan = adapter.load(PlanDto)
+
+    if not plan:
+        return
+
     plan.is_active = not plan.is_active
     adapter.save(plan)
 
@@ -89,24 +107,20 @@ async def on_traffic_input(
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
 
-    if message.text is None or not message.text.isdigit():
+    if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-plan-wrong-number",
         )
         return
 
     number = int(message.text)
+    adapter = DialogDataAdapter(dialog_manager)
+    plan = adapter.load(PlanDto)
 
-    if number <= 0:
-        await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
-            text_key="ntf-plan-negative-number",
-        )
+    if not plan:
         return
 
-    adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
     plan.traffic_limit = number
     adapter.save(plan)
 
@@ -122,24 +136,20 @@ async def on_devices_input(
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
 
-    if message.text is None or not message.text.isdigit():
+    if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-plan-wrong-number",
         )
         return
 
     number = int(message.text)
+    adapter = DialogDataAdapter(dialog_manager)
+    plan = adapter.load(PlanDto)
 
-    if number <= 0:
-        await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
-            text_key="ntf-plan-negative-number",
-        )
+    if not plan:
         return
 
-    adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
     plan.device_limit = number
     adapter.save(plan)
 
@@ -147,7 +157,7 @@ async def on_devices_input(
 
 
 async def on_duration_selected(
-    message: Message,
+    callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
 ) -> None:
@@ -156,14 +166,17 @@ async def on_duration_selected(
 
 
 async def on_duration_removed(
-    message: Message,
+    callback: CallbackQuery,
     widget: Button,
     sub_manager: SubManager,
 ) -> None:
     await sub_manager.load_data()
 
     adapter = DialogDataAdapter(sub_manager.manager)
-    plan = adapter.load(PlanSchema)
+    plan = adapter.load(PlanDto)
+
+    if not plan:
+        return
 
     duration_to_remove = int(sub_manager.item_id)
     new_durations = [d for d in plan.durations if d.days != duration_to_remove]
@@ -180,29 +193,25 @@ async def on_duration_input(
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
 
-    if message.text is None or not message.text.isdigit():
+    if message.text is None or not (message.text.isdigit() and int(message.text) > 0):
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-plan-wrong-number",
         )
         return
 
     number = int(message.text)
+    adapter = DialogDataAdapter(dialog_manager)
+    plan = adapter.load(PlanDto)
 
-    if number <= 0:
-        await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
-            text_key="ntf-plan-negative-number",
-        )
+    if not plan:
         return
 
-    adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
     plan.durations.append(
-        PlanDurationSchema(
+        PlanDurationDto(
             days=number,
             prices=[
-                PlanPriceSchema(
+                PlanPriceDto(
                     currency=currency,
                     price=100,
                 )
@@ -215,8 +224,8 @@ async def on_duration_input(
 
 
 async def on_currency_selected(
-    message: Message,
-    widget: Select,
+    callback: CallbackQuery,
+    widget: Select[Currency],
     dialog_manager: DialogManager,
     currency_selected: Currency,
 ) -> None:
@@ -235,7 +244,7 @@ async def on_price_input(
 
     if message.text is None:
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-plan-wrong-number",
         )
         return
@@ -246,13 +255,16 @@ async def on_price_input(
             raise InvalidOperation
     except InvalidOperation:
         await container.services.notification.notify_user(
-            telegram_id=user.telegram_id,
+            user=user,
             text_key="ntf-plan-wrong-number",
         )
         return
 
     adapter = DialogDataAdapter(dialog_manager)
-    plan = adapter.load(PlanSchema)
+    plan = adapter.load(PlanDto)
+
+    if not plan:
+        return
 
     duration_selected = dialog_manager.dialog_data.get("duration_selected")
     currency_selected = dialog_manager.dialog_data.get("currency_selected")
@@ -273,12 +285,15 @@ async def on_price_input(
 
 
 async def on_confirm_plan(
-    message: Message,
+    callback: CallbackQuery,
     widget: Button,
     dialog_manager: DialogManager,
 ) -> None:
     adapter = DialogDataAdapter(dialog_manager)
-    plan_data = adapter.load(PlanSchema)
+    plan_data = adapter.load(PlanDto)
+
+    if not plan_data:
+        return
 
     container: AppContainer = dialog_manager.middleware_data[APP_CONTAINER_KEY]
 
@@ -297,8 +312,7 @@ async def on_confirm_plan(
 
     plan = await container.services.plan.create(plan_data)
 
-    plan = await container.services.plan.get(plan.id)
-    print(plan)
+    print(await container.services.plan.get_by_name(name=plan.name))
 
     await dialog_manager.reset_stack()
     await dialog_manager.start(state=RemnashopPlans.MAIN)

@@ -2,25 +2,27 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
+from pydantic import Field
+
 from app.core.enums import Currency, PlanAvailability, PlanType
 
 from .base import TrackableModel
-from .timestamp import TimestampSchema
 
 
-class PlanSchema(TrackableModel):
+class PlanDto(TrackableModel):
+    id: Optional[int] = Field(default=None, frozen=True)
+
     name: str
     type: PlanType
     is_active: bool
+
     traffic_limit: Optional[int] = None
     device_limit: Optional[int] = None
-    durations: list["PlanDurationSchema"]
+
     availability: PlanAvailability
     allowed_user_ids: Optional[list[int]] = None
 
-
-class PlanDto(PlanSchema, TimestampSchema):
-    id: int
+    durations: list["PlanDurationDto"]
 
     @property
     def is_unlimited_traffic(self) -> bool:
@@ -31,13 +33,11 @@ class PlanDto(PlanSchema, TimestampSchema):
         return self.device_limit is None or self.device_limit == 0
 
 
-class PlanDurationSchema(TrackableModel):
+class PlanDurationDto(TrackableModel):
+    id: Optional[int] = Field(default=None, frozen=True)
+
     days: int
-    prices: list["PlanPriceSchema"]
-
-
-class PlanDurationDto(PlanDurationSchema):
-    id: int
+    prices: list["PlanPriceDto"]
 
     @property
     def total_duration(self) -> timedelta:
@@ -53,10 +53,8 @@ class PlanDurationDto(PlanDurationSchema):
         return None
 
 
-class PlanPriceSchema(TrackableModel):
+class PlanPriceDto(TrackableModel):
+    id: Optional[int] = Field(default=None, frozen=True)
+
     currency: Currency
     price: Decimal
-
-
-class PlanPriceDto(PlanPriceSchema):
-    id: int

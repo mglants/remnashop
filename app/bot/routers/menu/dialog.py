@@ -1,8 +1,10 @@
+from typing import Final
+
 from aiogram_dialog import Dialog, StartMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Row, Start
 
-from app.bot.conditions import is_admin_or_dev
+from app.bot.conditions import is_privileged
 from app.bot.routers.dashboard.users.handlers import on_user_search
 from app.bot.states import Dashboard, MainMenu
 from app.bot.widgets import Banner, I18nFormat, IgnoreUpdate
@@ -16,14 +18,20 @@ menu = Window(
     I18nFormat("separator"),
     I18nFormat("msg-menu-subscription"),
     # Row(
-    #     Button(text=I18nFormat("btn-menu-connect"), id="connect"),
+    #     Button(
+    #         text=I18nFormat(ButtonKey.CONNECT),
+    #         id="connect",
+    #     ),
     # ),
     # Row(
-    #     Button(text=I18nFormat("btn-menu-trial"), id="trial"),
+    #     Button(
+    #         text=I18nFormat(ButtonKey.TRIAL),
+    #         id="trial",
+    #     ),
     # ),
     Row(
         # Button(
-        #     text=I18nFormat("btn-menu-promocode"),
+        #     text=I18nFormat(ButtonKey.PROMOCODE),
         #     id="promocode",
         # ),
         Button(
@@ -47,7 +55,7 @@ menu = Window(
             id="dashboard",
             state=Dashboard.MAIN,
             mode=StartMode.RESET_STACK,
-            when=is_admin_or_dev,
+            when=is_privileged,
         ),
     ),
     MessageInput(func=on_user_search),
@@ -56,6 +64,6 @@ menu = Window(
     getter=menu_getter,
 )
 
-router = Dialog(
+router: Final[Dialog] = Dialog(
     menu,
 )

@@ -1,9 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, NamedTuple
-
-if TYPE_CHECKING:
-    from app.core.config import AppConfig
+from typing import NamedTuple, cast
 
 from fluent.runtime import FluentLocalization, FluentResourceLoader
 
@@ -16,12 +11,18 @@ from app.bot.middlewares import (
     UserMiddleware,
 )
 from app.bot.middlewares.base import EventTypedMiddleware
+from app.core.config import AppConfig
 from app.core.constants import LOCALES_DIR, RESOURCE_I18N
 
 
 class Middlewares(NamedTuple):
     outer: list[EventTypedMiddleware]
     inner: list[EventTypedMiddleware]
+
+    def get_i18n_middleware(self) -> I18nMiddleware:
+        if not self.inner:
+            raise ValueError("Inner middleware list is empty")
+        return cast(I18nMiddleware, self.inner[0])
 
 
 def create_i18n_middleware(config: AppConfig) -> I18nMiddleware:

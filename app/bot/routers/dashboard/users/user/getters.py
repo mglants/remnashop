@@ -1,12 +1,24 @@
+from typing import Any
+
 from aiogram_dialog import DialogManager
 
-from app.bot.models import AppContainer
+from app.core.container import AppContainer
 from app.core.enums import UserRole
 
 
-async def user_getter(dialog_manager: DialogManager, container: AppContainer, **kwargs) -> dict:
-    target_telegram_id = dialog_manager.start_data.get("target_telegram_id")
+async def user_getter(
+    dialog_manager: DialogManager,
+    container: AppContainer,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    if not isinstance(dialog_manager.start_data, dict):
+        return {}
+
+    target_telegram_id = dialog_manager.start_data["target_telegram_id"]
     target_user = await container.services.user.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        return {}
 
     return {
         "id": str(target_user.telegram_id),
@@ -17,9 +29,19 @@ async def user_getter(dialog_manager: DialogManager, container: AppContainer, **
     }
 
 
-async def role_getter(dialog_manager: DialogManager, container: AppContainer, **kwargs) -> dict:
-    target_telegram_id = dialog_manager.start_data.get("target_telegram_id")
-    target_user = await container.services.user.get(telegram_id=target_telegram_id)
-    roles = [role for role in UserRole if role != target_user.role]
+async def role_getter(
+    dialog_manager: DialogManager,
+    container: AppContainer,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    if not isinstance(dialog_manager.start_data, dict):
+        return {}
 
+    target_telegram_id = dialog_manager.start_data["target_telegram_id"]
+    target_user = await container.services.user.get(telegram_id=target_telegram_id)
+
+    if not target_user:
+        return {}
+
+    roles = [role for role in UserRole if role != target_user.role]
     return {"roles": roles}

@@ -16,10 +16,10 @@ class PlanRepository(BaseRepository):
     async def get_by_name(self, name: str) -> Optional[Plan]:
         return await self._get(Plan, Plan.name == name)
 
-    async def update(self, plan_id: int, **data: Any) -> Optional[Plan]:
+    async def update(self, plan_name: str, **data: Any) -> Optional[Plan]:
         return await self._update(
             model=Plan,
-            conditions=[Plan.id == plan_id],
+            conditions=[Plan.name == plan_name],
             load_result=True,
             **data,
         )
