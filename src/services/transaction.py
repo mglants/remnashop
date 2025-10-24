@@ -62,7 +62,15 @@ class TransactionService(BaseService):
             payment_id=transaction.payment_id,
             **transaction.changed_data,
         )
-        logger.info(f"Updated transaction '{transaction.payment_id}'")
+
+        if db_updated_transaction:
+            logger.info(f"Updated transaction '{transaction.payment_id}' successfully")
+        else:
+            logger.warning(
+                f"Attempted to update transaction '{transaction.payment_id}', "
+                "but transaction was not found or update failed"
+            )
+
         return TransactionDto.from_model(db_updated_transaction)
 
     async def count(self) -> int:

@@ -12,7 +12,7 @@ from src.core.constants import BATCH_DELAY, BATCH_SIZE
 from src.core.enums import MediaType, SystemNotificationType, UserNotificationType
 from src.core.utils.iterables import chunked
 from src.core.utils.message_payload import MessagePayload
-from src.infrastructure.database.models.dto.user import UserDto
+from src.infrastructure.database.models.dto import UserDto
 from src.infrastructure.taskiq.broker import broker
 from src.services.notification import NotificationService
 from src.services.user import UserService

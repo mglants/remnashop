@@ -8,11 +8,12 @@ from src.core.enums import AccessMode, Currency, SystemNotificationType, UserNot
 from .base import TrackableDto
 
 
-class SystemNotificationDto(TrackableDto):
+class SystemNotificationDto(TrackableDto):  # == SystemNotificationType
     bot_lifetime: bool = True
     user_registered: bool = True
     subscription: bool = True
     promocode_activated: bool = True
+    trial_getted: bool = True
     node_status: bool = True
     user_first_connected: bool = True
     user_hwid: bool = True
@@ -23,7 +24,7 @@ class SystemNotificationDto(TrackableDto):
         return getattr(self, ntf_type.value.lower(), False)
 
 
-class UserNotificationDto(TrackableDto):
+class UserNotificationDto(TrackableDto):  # == UserNotificationType
     expires_in_3_days: bool = True
     expires_in_2_days: bool = True
     expires_in_1_days: bool = True

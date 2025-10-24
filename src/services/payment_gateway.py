@@ -11,7 +11,6 @@ from src.core.config import AppConfig
 from src.core.enums import (
     Currency,
     PaymentGatewayType,
-    PlanType,
     PurchaseType,
     SystemNotificationType,
     TransactionStatus,
@@ -21,21 +20,19 @@ from src.core.utils.formatters import i18n_format_days, i18n_format_limit, i18n_
 from src.infrastructure.database import UnitOfWork
 from src.infrastructure.database.models.dto import (
     AnyGatewaySettingsDto,
+    CryptomusGatewaySettingsDto,
+    HeleketGatewaySettingsDto,
     PaymentGatewayDto,
     PaymentResult,
     PlanSnapshotDto,
     PriceDetailsDto,
     TransactionDto,
-    UserDto,
-)
-from src.infrastructure.database.models.dto.payment_gateway import (
-    CryptomusGatewaySettingsDto,
-    HeleketGatewaySettingsDto,
     UrlpayGatewaySettingsDto,
+    UserDto,
     YookassaGatewaySettingsDto,
     YoomoneyGatewaySettingsDto,
 )
-from src.infrastructure.database.models.sql.payment_gateway import PaymentGateway
+from src.infrastructure.database.models.sql import PaymentGateway
 from src.infrastructure.payment_gateways import BasePaymentGateway, PaymentGatewayFactory
 from src.infrastructure.redis import RedisRepository
 from src.infrastructure.taskiq.tasks.notifications import (
@@ -158,7 +155,15 @@ class PaymentGatewayService(BaseService):
             gateway_id=gateway.id,  # type: ignore[arg-type]
             **updated_data,
         )
-        logger.info(f"Payment gateway '{gateway.type}' updated")
+
+        if db_updated_gateway:
+            logger.info(f"Payment gateway '{gateway.type}' updated successfully")
+        else:
+            logger.warning(
+                f"Attempted to update gateway '{gateway.type}' (ID: {gateway.id}), "
+                f"but gateway was not found or update failed"
+            )
+
         return PaymentGatewayDto.from_model(db_updated_gateway, decrypt=True)
 
     async def filter_active(self, is_active: bool = True) -> list[PaymentGatewayDto]:
@@ -187,7 +192,7 @@ class PaymentGatewayService(BaseService):
         )
 
         if pricing.is_free:
-            logger.info(f"{log(user)} Free transaction")
+            logger.info(f"{log(user)} Transaction not created. Pricing is free")
             return PaymentResult(id=uuid.uuid4())
 
         payment: PaymentResult = await gateway_instance.handle_create_payment(
@@ -253,7 +258,7 @@ class PaymentGatewayService(BaseService):
             return
 
         if transaction.is_completed:
-            logger.critical(f"{log(transaction.user)} Transaction '{payment_id}' already completed")
+            logger.warning(f"{log(transaction.user)} Transaction '{payment_id}' already completed")
             return
 
         transaction.status = TransactionStatus.COMPLETED

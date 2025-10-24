@@ -7,11 +7,20 @@ from dishka.integrations.taskiq import inject
 from loguru import logger
 from remnawave.models.webhook import UserDto as RemnaUserDto
 
-from src.core.enums import PurchaseType, SubscriptionStatus
-from src.core.utils.formatters import format_bytes_to_gb, format_device_count
+from src.core.enums import PurchaseType, SubscriptionStatus, SystemNotificationType
+from src.core.utils.formatters import (
+    format_bytes_to_gb,
+    format_device_count,
+    i18n_format_days,
+    i18n_format_limit,
+    i18n_format_traffic_limit,
+)
 from src.infrastructure.database.models.dto import PlanSnapshotDto, SubscriptionDto, UserDto
 from src.infrastructure.taskiq.broker import broker
-from src.infrastructure.taskiq.tasks.notifications import send_error_notification_task
+from src.infrastructure.taskiq.tasks.notifications import (
+    send_error_notification_task,
+    send_system_notification_task,
+)
 from src.services.remnawave import RemnawaveService
 from src.services.subscription import SubscriptionService
 from src.services.user import UserService
@@ -46,6 +55,20 @@ async def trial_subscription_task(
         await subscription_service.create(user, trial_subscription)
         logger.debug(f"Created new trial subscription for user {user.telegram_id}")
 
+        await send_system_notification_task.kiq(
+            ntf_type=SystemNotificationType.TRIAL_GETTED,
+            i18n_key="ntf-event-subscription-trial",
+            i18n_kwargs={
+                "user_id": str(user.telegram_id),
+                "user_name": user.name,
+                "user_username": user.username or False,
+                "plan_name": plan.name,
+                "plan_type": plan.type,
+                "plan_traffic_limit": i18n_format_traffic_limit(plan.traffic_limit),
+                "plan_device_limit": i18n_format_limit(plan.device_limit),
+                "plan_duration": i18n_format_days(plan.duration),
+            },
+        )
         await redirect_to_successed_trial_task.kiq(user)
         logger.info(f"Trial subscription task completed successfully for user {user.telegram_id}")
 
@@ -82,9 +105,10 @@ async def purchase_subscription_task(
     logger.info(
         f"Task 'purchase_subscription' started: {purchase_type=} for user {user.telegram_id}"
     )
+    has_trial = subscription and subscription.is_trial
 
     try:
-        if purchase_type == PurchaseType.NEW:
+        if purchase_type == PurchaseType.NEW and not has_trial:
             created_user = await remnawave_service.create_user(user, plan)
             new_subscription = SubscriptionDto(
                 user_remna_id=created_user.uuid,
@@ -96,7 +120,7 @@ async def purchase_subscription_task(
             await subscription_service.create(user, new_subscription)
             logger.debug(f"Created new subscription for user {user.telegram_id}")
 
-        elif purchase_type == PurchaseType.RENEW:
+        elif purchase_type == PurchaseType.RENEW and not has_trial:
             if not subscription:
                 raise Exception(f"No subscription found for renewal for user {user.telegram_id}")
 
@@ -104,13 +128,14 @@ async def purchase_subscription_task(
                 user=user,
                 plan=plan,
                 uuid=subscription.user_remna_id,
+                current_expire_at=subscription.expire_at,
             )
             subscription.expire_at = updated_user.expire_at
             subscription.plan = plan
             await subscription_service.update(subscription)
             logger.debug(f"Renewed subscription for user {user.telegram_id}")
 
-        elif purchase_type == PurchaseType.CHANGE:
+        elif purchase_type == PurchaseType.CHANGE or has_trial:
             if not subscription:
                 raise Exception(f"No subscription found for change for user {user.telegram_id}")
 
@@ -187,7 +212,7 @@ async def delete_current_subscription_task(
     subscription.status = SubscriptionStatus.DELETED
     await subscription_service.update(subscription)
     await user_service.delete_current_subscription(user.telegram_id)
-    await remnawave_service.delete_user(user)
+    # await remnawave_service.delete_user(user)  # TODO: Should I delete it?
 
 
 @broker.task

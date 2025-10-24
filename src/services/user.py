@@ -81,8 +81,13 @@ class UserService(BaseService):
 
         if db_updated_user:
             await self.clear_user_cache(db_updated_user.telegram_id)
+            logger.info(f"Updated user '{user.telegram_id}' successfully")
+        else:
+            logger.warning(
+                f"Attempted to update user '{user.telegram_id}', "
+                f"but user was not found or update failed"
+            )
 
-        logger.info(f"Updated user '{user.telegram_id}'")
         return UserDto.from_model(db_updated_user)
 
     async def compare_and_update(
@@ -193,11 +198,9 @@ class UserService(BaseService):
 
     async def add_to_recent_registered(self, telegram_id: int) -> None:
         await self._add_to_recent_list(RecentRegisteredUsersKey(), telegram_id)
-        logger.info(f"User '{telegram_id}' added to recent registered list")
 
     async def update_recent_activity(self, telegram_id: int) -> None:
         await self._add_to_recent_list(RecentActivityUsersKey(), telegram_id)
-        logger.info(f"User '{telegram_id}' recent activity updated")
 
     async def get_recent_registered_users(self) -> list[UserDto]:
         telegram_ids = await self._get_recent_registered()

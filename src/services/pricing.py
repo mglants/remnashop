@@ -7,7 +7,6 @@ from redis.asyncio import Redis
 
 from src.core.config import AppConfig
 from src.core.enums import Currency
-from src.core.utils.formatters import format_user_log as log
 from src.infrastructure.database.models.dto import PriceDetailsDto, UserDto
 from src.infrastructure.redis import RedisRepository
 
@@ -28,7 +27,8 @@ class PricingService(BaseService):
     @staticmethod
     def calculate(user: UserDto, price: Decimal, currency: Currency) -> PriceDetailsDto:
         logger.debug(
-            f"{log(user)} Calculating price for amount '{price}' and currency '{currency}'"
+            f"Calculating price for amount '{price}' and currency "
+            f"'{currency}' for user '{user.telegram_id}'"
         )
 
         discount_percent = min(user.purchase_discount or user.personal_discount, 100)
@@ -40,8 +40,13 @@ class PricingService(BaseService):
             else PricingService.apply_currency_rules(discounted, currency)
         )
 
+        if discounted <= 0 and final_amount == 0:
+            logger.debug(
+                f"Discounted amount '{discounted}' was zero or negative, final amount set to 0"
+            )
+
         logger.info(
-            f"{log(user)} Price calculated: original='{price}', "
+            f"Price calculated: original='{price}', "
             f"discount_percent='{discount_percent}', final='{final_amount}'"
         )
 
@@ -57,10 +62,10 @@ class PricingService(BaseService):
         try:
             price = Decimal(input_price.strip())
         except InvalidOperation:
-            raise ValueError("Invalid numeric format")
+            raise ValueError(f"Invalid numeric format provided for price: '{input_price}'")
 
         if price < 0:
-            raise ValueError("Price cannot be negative")
+            raise ValueError(f"Negative price provided: '{input_price}'")
         if price == 0:
             return Decimal(0)
 

@@ -7,7 +7,10 @@ msg-subscription =
     </blockquote>
 
 msg-menu-subscription =
-    <b>💳 Подписка:</b>
+    { $is_trial ->
+    [1] <b>💳 Пробная подписка:</b>
+    *[0] <b>💳 Подписка:</b>
+    }
     { $status ->
     [ACTIVE]
     { msg-subscription }

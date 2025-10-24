@@ -7,7 +7,6 @@ from redis.asyncio import Redis
 
 from src.core.config import AppConfig
 from src.core.enums import PlanAvailability
-from src.core.utils.formatters import format_user_log as log
 from src.infrastructure.database import UnitOfWork
 from src.infrastructure.database.models.dto import PlanDto, UserDto
 from src.infrastructure.database.models.sql import Plan, PlanDuration, PlanPrice
@@ -37,7 +36,7 @@ class PlanService(BaseService):
     async def create(self, plan: PlanDto) -> PlanDto:
         db_plan = self._dto_to_model(plan)
         db_created_plan = await self.uow.repository.plans.create(db_plan)
-        logger.info(f"Created plan '{plan.name}'")
+        logger.info(f"Created plan '{plan.name}' with ID '{db_created_plan.id}'")
         return PlanDto.from_model(db_created_plan)  # type: ignore[return-value]
 
     async def get(self, plan_id: int) -> Optional[PlanDto]:
@@ -68,12 +67,25 @@ class PlanService(BaseService):
     async def update(self, plan: PlanDto) -> Optional[PlanDto]:
         db_plan = self._dto_to_model(plan)
         db_updated_plan = await self.uow.repository.plans.update(db_plan)
-        logger.info(f"Updated plan '{plan.name}'")
+
+        if db_updated_plan:
+            logger.info(f"Updated plan '{plan.name}' (ID: {plan.id}) successfully")
+        else:
+            logger.warning(
+                f"Attempted to update plan '{plan.name}' (ID: {plan.id}), "
+                "but plan was not found or update failed"
+            )
+
         return PlanDto.from_model(db_updated_plan)
 
     async def delete(self, plan_id: int) -> bool:
         result = await self.uow.repository.plans.delete(plan_id)
-        logger.info(f"Deleted plan '{plan_id}': '{result}'")
+
+        if result:
+            logger.info(f"Plan '{plan_id}' deleted successfully")
+        else:
+            logger.warning(f"Failed to delete plan '{plan_id}'. Plan not found or deletion failed")
+
         return result
 
     async def count(self) -> int:
@@ -89,16 +101,25 @@ class PlanService(BaseService):
         )
 
         if db_plans:
+            if len(db_plans) > 1:
+                logger.warning(
+                    f"Multiple trial plans found ({len(db_plans)}). "
+                    f"Using the first one: '{db_plans[0].name}'"
+                )
+
             db_plan = db_plans[0]
 
             if db_plan.is_active:
                 logger.debug(f"Available trial plan '{db_plans[0].name}'")
                 return PlanDto.from_model(db_plans[0])
+            else:
+                logger.warning(f"Trial plan '{db_plans[0].name}' found but is not active")
 
+        logger.debug("No active trial plan found")
         return None
 
     async def get_available_plans(self, user_dto: UserDto, is_new_user: bool) -> list[PlanDto]:
-        logger.debug(f"{log(user_dto)} Fetching available plans")
+        logger.debug(f"Fetching available plans for user '{user_dto.telegram_id}'")
 
         db_plans: list[Plan] = await self.uow.repository.plans.filter_active(is_active=True)
         db_filtered_plans = []
@@ -116,7 +137,10 @@ class PlanService(BaseService):
                 case PlanAvailability.ALLOWED if user_dto.telegram_id in db_plan.allowed_user_ids:
                     db_filtered_plans.append(db_plan)
 
-        logger.info(f"{log(user_dto)} Available plans filtered: '{len(db_filtered_plans)}'")
+        logger.info(
+            f"Available plans filtered: '{len(db_filtered_plans)}' "
+            f"for user '{user_dto.telegram_id}'"
+        )
         return PlanDto.from_model_list(db_filtered_plans)
 
     #

@@ -12,8 +12,7 @@ from src.bot.states import MainMenu
 from src.core.constants import USER_KEY
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
-from src.infrastructure.database.models.dto import UserDto
-from src.infrastructure.database.models.dto.plan import PlanSnapshotDto
+from src.infrastructure.database.models.dto import PlanSnapshotDto, UserDto
 from src.infrastructure.taskiq.tasks.subscriptions import trial_subscription_task
 from src.services.notification import NotificationService
 from src.services.plan import PlanService

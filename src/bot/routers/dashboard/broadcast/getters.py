@@ -6,6 +6,7 @@ from dishka.integrations.aiogram_dialog import inject
 
 from src.bot.keyboards import goto_buttons
 from src.core.constants import DATETIME_FORMAT
+from src.core.enums import PlanAvailability
 from src.infrastructure.database.models.dto import PlanDto
 from src.services.broadcast import BroadcastService
 from src.services.plan import PlanService
@@ -25,6 +26,7 @@ async def plans_getter(
             "is_active": plan.is_active,
         }
         for plan in plans
+        if plan.availability != PlanAvailability.TRIAL
     ]
 
     return {

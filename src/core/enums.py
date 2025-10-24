@@ -116,6 +116,7 @@ class SystemNotificationType(UpperStrEnum):  # == SystemNotificationDto
     USER_REGISTERED = auto()
     SUBSCRIPTION = auto()
     PROMOCODE_ACTIVATED = auto()
+    TRIAL_GETTED = auto()
     #
     NODE_STATUS = auto()
     USER_FIRST_CONNECTED = auto()

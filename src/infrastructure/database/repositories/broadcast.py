@@ -1,7 +1,7 @@
 from typing import Any, Optional
 from uuid import UUID
 
-from src.infrastructure.database.models.sql.broadcast import Broadcast, BroadcastMessage
+from src.infrastructure.database.models.sql import Broadcast, BroadcastMessage
 
 from .base import BaseRepository
 

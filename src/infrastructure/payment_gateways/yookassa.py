@@ -10,8 +10,11 @@ from httpx import AsyncClient, HTTPStatusError
 from loguru import logger
 
 from src.core.enums import TransactionStatus, YookassaVatCode
-from src.infrastructure.database.models.dto import PaymentGatewayDto, YookassaGatewaySettingsDto
-from src.infrastructure.database.models.dto.payment_gateway import PaymentResult
+from src.infrastructure.database.models.dto import (
+    PaymentGatewayDto,
+    PaymentResult,
+    YookassaGatewaySettingsDto,
+)
 
 from .base import BasePaymentGateway
 

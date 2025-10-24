@@ -11,13 +11,12 @@ from datetime import datetime, timedelta
 from decimal import ROUND_HALF_UP, ROUND_UP, Decimal
 from re import Match
 
-from loguru import logger
-
 from src.core.i18n.keys import ByteUnitKey, TimeUnitKey, UtilKey
 from src.core.utils.time import datetime_now
 from src.infrastructure.database.models.dto.user import BaseUserDto
 
 
+# For only user action
 def format_user_log(user: Union[BaseUserDto, UserDto]) -> str:
     return f"[{user.role.upper()}:{user.telegram_id} ({user.name})]"
 

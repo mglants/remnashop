@@ -64,12 +64,28 @@ class PromocodeService(BaseService):
             promocode_id=promocode.id,  # type: ignore[arg-type]
             **promocode.changed_data,
         )
-        logger.info(f"Updated promocode '{promocode.code}'")
+
+        if db_updated_promocode:
+            logger.info(f"Updated promocode '{promocode.code}' successfully")
+        else:
+            logger.warning(
+                f"Attempted to update promocode '{promocode.code}' (ID: {promocode.id}), "
+                "but promocode was not found or update failed"
+            )
+
         return PromocodeDto.from_model(db_updated_promocode)
 
     async def delete(self, promocode_id: int) -> bool:
         result = await self.uow.repository.promocodes.delete(promocode_id)
-        logger.info(f"Deleted promocode '{promocode_id}': '{result}'")
+
+        if result:
+            logger.info(f"Promocode '{promocode_id}' deleted successfully")
+        else:
+            logger.warning(
+                f"Failed to delete promocode '{promocode_id}'. "
+                f"Promocode not found or deletion failed"
+            )
+
         return result
 
     async def filter_by_type(self, promocode_type: PromocodeRewardType) -> list[PromocodeDto]:

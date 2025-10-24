@@ -8,8 +8,7 @@ from src.core.constants import BATCH_DELAY, BATCH_SIZE
 from src.core.enums import BroadcastMessageStatus, BroadcastStatus
 from src.core.utils.iterables import chunked
 from src.core.utils.message_payload import MessagePayload
-from src.infrastructure.database.models.dto import BroadcastMessageDto, UserDto
-from src.infrastructure.database.models.dto.broadcast import BroadcastDto
+from src.infrastructure.database.models.dto import BroadcastDto, BroadcastMessageDto, UserDto
 from src.infrastructure.taskiq.broker import broker
 from src.services.broadcast import BroadcastService
 from src.services.notification import NotificationService

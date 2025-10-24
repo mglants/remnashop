@@ -10,8 +10,7 @@ from httpx import AsyncClient, Timeout
 from loguru import logger
 
 from src.core.enums import TransactionStatus
-from src.infrastructure.database.models.dto import PaymentGatewayDto
-from src.infrastructure.database.models.dto.payment_gateway import PaymentResult
+from src.infrastructure.database.models.dto import PaymentGatewayDto, PaymentResult
 
 
 class PaymentGatewayFactory(Protocol):

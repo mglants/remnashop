@@ -31,7 +31,8 @@ async def menu_getter(
             "name": user.name,
             "status": None,
             "is_privileged": user.is_privileged,
-            "trial": not has_any_subscription and plan,
+            "trial_available": not has_any_subscription and plan,
+            "is_trial": False,
         }
 
     expiry_time = (
@@ -51,4 +52,5 @@ async def menu_getter(
         "device_limit": i18n_format_limit(user.current_subscription.plan.device_limit),
         "expiry_time": expiry_time,
         "is_privileged": user.is_privileged,
+        "is_trial": user.current_subscription.is_trial,
     }

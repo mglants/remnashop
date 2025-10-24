@@ -29,7 +29,7 @@ menu = Window(
             text=I18nFormat("btn-menu-trial"),
             id="trial",
             on_click=on_get_trial,
-            when=F["trial"],
+            when=F["trial_available"],
         ),
     ),
     Row(

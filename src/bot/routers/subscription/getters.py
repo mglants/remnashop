@@ -29,7 +29,8 @@ async def subscription_getter(
     user: UserDto = dialog_manager.middleware_data[USER_KEY]
 
     return {
-        "has_active_subscription": user.current_subscription is not None,
+        "has_active_subscription": user.current_subscription
+        and not user.current_subscription.is_trial
     }
 
 

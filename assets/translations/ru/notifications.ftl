@@ -77,6 +77,15 @@ ntf-event-payment-info =
     }
     </blockquote>
 
+ntf-event-trial-info =
+    <blockquote>
+    • <b>ID</b>: <code>{ $user_id }</code>
+    • <b>Имя</b>: { $user_name } { $user_username -> 
+        [0] { space }
+        *[has] (<a href="tg://user?id={ $user_id }">@{ $user_username }</a>)
+    }
+    </blockquote>
+
 ntf-event-payment-info-plan =
     <blockquote>
     • <b>План</b>: <code>{ $plan_name }</code>
@@ -94,6 +103,15 @@ ntf-event-payment-info-previous-plan =
     • <b>Лимит устройств</b>: { $previous_plan_device_limit } -> { $plan_device_limit }
     • <b>Длительность</b>: { $previous_plan_duration } -> { $plan_duration }
     </blockquote>
+
+ntf-event-subscription-trial =
+    #EventTrialGetted
+
+    <b>🔅 Событие: Получение пробной подписки!</b>
+
+    { ntf-event-trial-info }
+
+    { ntf-event-payment-info-plan }
 
 ntf-event-subscription-new =
     #EventSubscriptionNew

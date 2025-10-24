@@ -12,7 +12,7 @@ from src.core.storage.key_builder import build_key
 from src.core.utils.types import AnyNotification
 from src.infrastructure.database import UnitOfWork
 from src.infrastructure.database.models.dto import SettingsDto
-from src.infrastructure.database.models.sql.settings import Settings
+from src.infrastructure.database.models.sql import Settings
 from src.infrastructure.redis import RedisRepository
 from src.infrastructure.redis.cache import redis_cache
 
@@ -61,11 +61,14 @@ class SettingsService(BaseService):
         if settings.system_notifications.changed_data:
             settings.system_notifications = settings.system_notifications
 
-        db_updated_settings = await self.uow.repository.settings.update(
-            **settings.prepare_changed_data()
-        )
+        changed_data = settings.prepare_changed_data()
+        db_updated_settings = await self.uow.repository.settings.update(**changed_data)
         await self._clear_cache()
-        logger.debug("Settings updated in DB")
+
+        if changed_data:
+            logger.info("Settings updated in DB")
+        else:
+            logger.warning("Settings update called, but no fields were actually changed")
 
         return SettingsDto.from_model(db_updated_settings)  # type: ignore[return-value]
 
