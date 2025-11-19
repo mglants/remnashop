@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .user import User
+
+from sqlalchemy import BigInteger, Enum, ForeignKey, Integer
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.core.enums import ReferralLevel, ReferralRewardType
+
+from .base import BaseSql
+from .timestamp import TimestampMixin
+
+
+class Referral(BaseSql, TimestampMixin):
+    __tablename__ = "referrals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    referrer_telegram_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.telegram_id"),
+        nullable=False,
+    )
+    referred_telegram_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.telegram_id"),
+        nullable=False,
+    )
+
+    level: Mapped[ReferralLevel] = mapped_column(
+        Enum(
+            ReferralLevel,
+            name="referral_level",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+
+    referrer: Mapped["User"] = relationship(
+        "User", back_populates="referrals", foreign_keys=[referrer_telegram_id]
+    )
+    referred: Mapped["User"] = relationship(
+        "User", back_populates="referrer", foreign_keys=[referred_telegram_id]
+    )
+    rewards: Mapped[list["ReferralReward"]] = relationship(
+        "ReferralReward", back_populates="referral", lazy="selectin"
+    )
+
+
+class ReferralReward(BaseSql, TimestampMixin):
+    __tablename__ = "referral_rewards"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    referral_id: Mapped[int] = mapped_column(Integer, ForeignKey("referrals.id"), nullable=False)
+    user_telegram_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.telegram_id"),
+        nullable=False,
+    )
+
+    reward_type: Mapped[ReferralRewardType] = mapped_column(
+        Enum(
+            ReferralRewardType,
+            name="referral_reward_type",
+            create_constraint=True,
+            validate_strings=True,
+        ),
+        nullable=False,
+    )
+    reward_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    referral: Mapped["Referral"] = relationship("Referral", back_populates="rewards")
+    user: Mapped["User"] = relationship("User", back_populates="rewards_received")

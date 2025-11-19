@@ -20,10 +20,11 @@ class BaseUserDto(TrackableDto):
     id: Optional[int] = Field(default=None, frozen=True)
     telegram_id: int
     username: Optional[str] = None
+    referral_code: str = ""
 
     name: str
     role: UserRole = UserRole.USER
-    language: Locale
+    language: Locale = Locale.EN
 
     personal_discount: int = 0
     purchase_discount: int = 0

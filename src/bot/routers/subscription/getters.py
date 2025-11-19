@@ -215,8 +215,8 @@ async def getter_connect(
         raise ValueError(f"User '{user.telegram_id}' has no active subscription after purchase")
 
     return {
-        "miniapp_url": config.bot.mini_app_url.get_secret_value(),
-        "subscription_url": user.current_subscription.url,
+        "is_app": config.bot.is_mini_app,
+        "url": config.bot.mini_app_url or user.current_subscription.url,
         "connetable": True,
     }
 
@@ -242,7 +242,7 @@ async def success_payment_getter(
         "device_limit": i18n_format_device_limit(subscription.device_limit),
         "expire_time": i18n_format_expire_time(subscription.expire_at),
         "added_duration": i18n_format_days(subscription.plan.duration),
-        "miniapp_url": config.bot.mini_app_url.get_secret_value(),
-        "subscription_url": subscription.url,
+        "is_app": config.bot.is_mini_app,
+        "url": config.bot.mini_app_url or subscription.url,
         "connetable": True,
     }

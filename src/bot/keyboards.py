@@ -33,15 +33,15 @@ goto_buttons = [
 connect_buttons = (
     WebApp(
         text=I18nFormat("btn-menu-connect"),
-        url=Format("{miniapp_url}"),
+        url=Format("{url}"),
         id="connect_miniapp",
-        when=F["miniapp_url"] & F["connetable"],
+        when=F["is_app"] & F["connetable"],
     ),
     Url(
         text=I18nFormat("btn-menu-connect"),
-        url=Format("{subscription_url}"),
+        url=Format("{url}"),
         id="connect_sub_page",
-        when=~F["miniapp_url"] & F["connetable"],
+        when=~F["is_app"] & F["connetable"],
     ),
 )
 

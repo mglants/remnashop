@@ -306,6 +306,26 @@ traffic-strategy = { $strategy_type ->
     *[OTHER] { $strategy_type }
     }
 
+reward-type = { $reward_type -> 
+    [POINTS] Баллы
+    [EXTRA_DAYS] Дни
+    *[OTHER] { $reward_type }
+    }
+
+accrual-strategy = { $type -> 
+    [ON_FIRST_PAYMENT] Первый платеж
+    [ON_EACH_PAYMENT] Каждый платеж
+    [ON_RENEWAL] Каждое продление
+    *[OTHER] { $type }
+    }
+
+reward-strategy = { $type -> 
+    [FIXED_AMOUNT] Фиксированное значение
+    [PERCENTAGE] Процент
+    [MULTILEVEL] Процент по уровням
+    *[OTHER] { $type }
+    }
+
 language = { $language ->
     [ar] Арабский
     [az] Азербайджанский

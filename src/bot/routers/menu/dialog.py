@@ -15,13 +15,12 @@ from magic_filter import F
 
 from src.bot.keyboards import connect_buttons
 from src.bot.routers.dashboard.users.handlers import on_user_search
-from src.bot.routers.extra.test import show_dev_popup
 from src.bot.states import Dashboard, MainMenu, Subscription
 from src.bot.widgets import Banner, I18nFormat, IgnoreUpdate
 from src.core.constants import MIDDLEWARE_DATA_KEY, PURCHASE_PREFIX, USER_KEY
 from src.core.enums import BannerName
 
-from .getters import devices_getter, menu_getter
+from .getters import devices_getter, invite_getter, menu_getter
 from .handlers import on_device_delete, on_get_trial, show_reason
 
 menu = Window(
@@ -59,12 +58,12 @@ menu = Window(
         ),
     ),
     Row(
-        # Button(
-        #     text=I18nFormat("btn-menu-invite"),
-        #     id="invite",
-        #     on_click=show_dev_popup,
-        #     # state=MainMenu.INVITE,
-        # ),
+        SwitchTo(
+            text=I18nFormat("btn-menu-invite"),
+            id="invite",
+            state=MainMenu.INVITE,
+            when=F["is_referral_enable"],
+        ),
         Url(
             text=I18nFormat("btn-menu-support"),
             id="support",
@@ -130,7 +129,7 @@ invite = Window(
     Row(
         CopyText(
             text=I18nFormat("btn-menu-invite-copy"),
-            copy_text=Format("copy"),
+            copy_text=Format("{referral_code}"),
         ),
     ),
     Row(
@@ -140,7 +139,7 @@ invite = Window(
         ),
         SwitchInlineQueryChosenChatButton(
             text=I18nFormat("btn-menu-invite-send"),
-            query=Format("query"),
+            query=Format("{query}"),
             allow_user_chats=True,
             allow_group_chats=True,
             allow_channel_chats=True,
@@ -163,7 +162,7 @@ invite = Window(
     ),
     IgnoreUpdate(),
     state=MainMenu.INVITE,
-    # getter=invite_getter,
+    getter=invite_getter,
 )
 
 router = Dialog(

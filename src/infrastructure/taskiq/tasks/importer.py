@@ -8,7 +8,9 @@ from remnawave.exceptions import BadRequestError
 from remnawave.models import CreateUserRequestDto, UserResponseDto, UsersResponseDto
 
 from src.core.constants import IMPORTED_TAG
+from src.core.enums import SubscriptionStatus
 from src.core.utils.formatters import format_limits_to_plan_type
+from src.core.utils.time import datetime_now
 from src.core.utils.types import RemnaUserDto
 from src.infrastructure.database.models.dto import (
     PlanSnapshotDto,
@@ -194,9 +196,13 @@ async def create_user_from_panel_task(
         internal_squads=remna_subscription.internal_squads,
         external_squad=remna_subscription.external_squad,
     )
+
+    expired = remna_user.expire_at and remna_user.expire_at < datetime_now()
+    status = SubscriptionStatus.EXPIRED if expired else remna_user.status
+
     subscription = SubscriptionDto(
         user_remna_id=remna_user.uuid,
-        status=remna_user.status,
+        status=status,
         traffic_limit=temp_plan.traffic_limit,
         device_limit=temp_plan.device_limit,
         internal_squads=remna_subscription.internal_squads,
@@ -205,5 +211,6 @@ async def create_user_from_panel_task(
         url=remna_subscription.url,
         plan=temp_plan,
     )
+
     await subscription_service.create(user, subscription)
     logger.info(f"User and subscription successfully created for '{remna_user.telegram_id}'")

@@ -333,7 +333,6 @@ class NotificationService(BaseService):
             telegram_id=self.config.bot.dev_id,
             name="TempDev",
             role=UserRole.DEV,
-            language=Locale.EN,
         )
 
         logger.warning("Dev is empty! Adding a fallback dev from environment config")

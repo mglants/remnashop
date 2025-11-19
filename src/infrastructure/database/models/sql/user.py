@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .promocode import PromocodeActivation
+    from .referral import Referral, ReferralReward
     from .subscription import Subscription
     from .transaction import Transaction
 
@@ -22,6 +23,7 @@ class User(BaseSql, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     username: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    referral_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[UserRole] = mapped_column(
@@ -76,4 +78,19 @@ class User(BaseSql, TimestampMixin):
         "Transaction",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    referrer: Mapped[Optional["Referral"]] = relationship(
+        "Referral",
+        back_populates="referred",
+        foreign_keys="[Referral.referred_telegram_id]",
+        uselist=False,
+    )
+    referrals: Mapped[list["Referral"]] = relationship(
+        "Referral",
+        back_populates="referrer",
+        foreign_keys="[Referral.referrer_telegram_id]",
+        lazy="selectin",
+    )
+    rewards_received: Mapped[list["ReferralReward"]] = relationship(
+        "ReferralReward", back_populates="user", lazy="selectin"
     )

@@ -21,28 +21,6 @@ btn-channel-confirm = ✅ Подтвердить
 btn-notification-close = ❌ Закрыть
 btn-contact-support = 📩 Перейти в поддержку
 
-btn-statistics-page =
-    { $target_page1 ->
-    [1] 👥
-    [2] 🧾
-    [3] 💳
-    [4] 📦
-    [5] 🎁
-    [6] 👪
-    *[OTHER] page
-    }
-
-btn-statistics-current-page =
-    { $current_page1 ->
-    [1] [👥]
-    [2] [🧾]
-    [3] [💳]
-    [4] [📦]
-    [5] [🎁]
-    [6] [👪]
-    *[OTHER] [page]
-    }
-
 btn-squad-choice = { $selected -> 
     [1] 🔘
     *[0] ⚪
@@ -81,6 +59,30 @@ btn-dashboard-access = 🔓 Режим доступа
 btn-dashboard-remnawave = 🌊 RemnaWave
 btn-dashboard-remnashop = 🛍 RemnaShop
 btn-dashboard-importer = 📥 Импорт пользователей
+
+
+# Statistics
+btn-statistics-page =
+    { $target_page1 ->
+    [1] 👥
+    [2] 🧾
+    [3] 💳
+    [4] 📦
+    [5] 🎁
+    [6] 👪
+    *[OTHER] page
+    }
+
+btn-statistics-current-page =
+    { $current_page1 ->
+    [1] [👥]
+    [2] [🧾]
+    [3] [💳]
+    [4] [📦]
+    [5] [🎁]
+    [6] [👪]
+    *[OTHER] [page]
+    }
 
 
 # Users
@@ -230,6 +232,46 @@ btn-gateways-default-currency-choice = { $enabled ->
     [1] 🔘
     *[0] ⚪
     } { $symbol } { $currency }
+
+
+# Referral
+btn-referral-level = 🔢 Уровень
+btn-referral-reward = 🎁 Награда
+btn-referral-accrual-strategy = 📍 Стратегия начисления
+btn-referral-reward-strategy = ⚖️ Стратегия награждения
+
+
+btn-referral-enable = { $is_enable -> 
+    [1] 🟢 Включена
+    *[0] 🔴 Выключена
+    }
+
+btn-referral-level-choice = { $type -> 
+    [1] 1️⃣
+    [2] 2️⃣
+    [3] 3️⃣
+    *[OTHER] { $type }
+    }
+
+btn-referral-reward-choice = { $type -> 
+    [POINTS] 💎 Баллы
+    [EXTRA_DAYS] ⏳ Дни
+    *[OTHER] { $type }
+    }
+
+btn-referral-accrual-strategy-choice = { $type -> 
+    [ON_FIRST_PAYMENT] 💳 Первый платеж
+    [ON_EACH_PAYMENT] 💸 Каждый платеж
+    [ON_RENEWAL] 🔁 Каждое продление
+    *[OTHER] { $type }
+    }
+
+btn-referral-reward-strategy-choice = { $type -> 
+    [FIXED_AMOUNT] 🔸 Фиксированное значение
+    [PERCENTAGE] 🔹 Процент
+    [MULTILEVEL] 🔷 Процент по уровням
+    *[OTHER] { $type }
+    }
 
 
 # Notifications

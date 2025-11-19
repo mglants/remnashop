@@ -1,5 +1,5 @@
 from aiogram import F, Router
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandObject, CommandStart
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, ShowMode, StartMode, SubManager
 from aiogram_dialog.widgets.kbd import Button
@@ -10,13 +10,14 @@ from loguru import logger
 
 from src.bot.keyboards import CALLBACK_CHANNEL_CONFIRM, CALLBACK_RULES_ACCEPT
 from src.bot.states import MainMenu
-from src.core.constants import USER_KEY
+from src.core.constants import REFERRAL_PREFIX, USER_KEY
 from src.core.utils.formatters import format_user_log as log
 from src.core.utils.message_payload import MessagePayload
 from src.infrastructure.database.models.dto import PlanSnapshotDto, UserDto
 from src.infrastructure.taskiq.tasks.subscriptions import trial_subscription_task
 from src.services.notification import NotificationService
 from src.services.plan import PlanService
+from src.services.referral import ReferralService
 from src.services.remnawave import RemnawaveService
 
 router = Router(name=__name__)
@@ -34,12 +35,20 @@ async def on_start_dialog(
     )
 
 
+@inject
 @router.message(CommandStart(ignore_case=True))
 async def on_start_command(
     message: Message,
+    command: CommandObject,
     user: UserDto,
     dialog_manager: DialogManager,
+    referral_service: FromDishka[ReferralService],
 ) -> None:
+    if command.args and command.args.startswith(REFERRAL_PREFIX):
+        referral_code = command.args
+        logger.info(f"Start with referral code: {referral_code}")
+        await referral_service.handle_referral(user, referral_code)
+
     await on_start_dialog(user, dialog_manager)
 
 

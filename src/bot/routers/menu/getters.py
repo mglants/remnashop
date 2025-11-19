@@ -15,6 +15,7 @@ from src.core.utils.formatters import (
 from src.infrastructure.database.models.dto import UserDto
 from src.services.plan import PlanService
 from src.services.remnawave import RemnawaveService
+from src.services.settings import SettingsService
 from src.services.subscription import SubscriptionService
 
 
@@ -26,6 +27,7 @@ async def menu_getter(
     i18n: FromDishka[TranslatorRunner],
     plan_service: FromDishka[PlanService],
     subscription_service: FromDishka[SubscriptionService],
+    settings_service: FromDishka[SettingsService],
     **kwargs: Any,
 ) -> dict[str, Any]:
     plan = await plan_service.get_trial_plan()
@@ -39,7 +41,8 @@ async def menu_getter(
         "personal_discount": user.personal_discount,
         "support": support_link,
         "has_subscription": user.has_subscription,
-        "miniapp_url": config.bot.mini_app_url.get_secret_value(),
+        "is_app": config.bot.is_mini_app,
+        "is_referral_enable": await settings_service.is_referral_enable(),
     }
 
     subscription = user.current_subscription
@@ -66,7 +69,7 @@ async def menu_getter(
             "is_trial": subscription.is_trial,
             "has_device_limit": subscription.has_devices_limit if subscription.is_active else False,
             "connetable": subscription.is_active,
-            "subscription_url": subscription.url,
+            "url": config.bot.mini_app_url or subscription.url,
         }
     )
 
@@ -100,4 +103,19 @@ async def devices_getter(
         "max_count": i18n_format_device_limit(user.current_subscription.device_limit),
         "devices": formatted_devices,
         "devices_empty": len(devices) == 0,
+    }
+
+
+@inject
+async def invite_getter(
+    dialog_manager: DialogManager,
+    user: UserDto,
+    settings_service: FromDishka[SettingsService],
+    **kwargs: Any,
+) -> dict[str, Any]:
+    settings = await settings_service.get()
+
+    return {
+        "referral_code": user.referral_code,
+        "query": user.referral_code,
     }

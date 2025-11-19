@@ -1,10 +1,19 @@
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import Field, SecretStr
 
-from src.core.enums import AccessMode, Currency, SystemNotificationType, UserNotificationType
+from src.core.enums import (
+    AccessMode,
+    Currency,
+    ReferralAccrualStrategy,
+    ReferralLevel,
+    ReferralRewardStrategy,
+    ReferralRewardType,
+    SystemNotificationType,
+    UserNotificationType,
+)
 
-from .base import TrackableDto
+from .base import BaseDto, TrackableDto
 
 
 class SystemNotificationDto(TrackableDto):  # == SystemNotificationType
@@ -35,6 +44,29 @@ class UserNotificationDto(TrackableDto):  # == UserNotificationType
         return getattr(self, ntf_type.value.lower(), False)
 
 
+class FixedAmountConfig(BaseDto):
+    amount: int = 5
+
+
+class PercentageConfig(BaseDto):
+    percent: int = 10
+
+
+class MultilevelConfig(BaseDto):
+    level_values: dict[ReferralLevel, int] = {ReferralLevel.FIRST: 10, ReferralLevel.SECOND: 5}
+
+
+class ReferralSettingsDto(TrackableDto):
+    enable: bool = True
+    level: ReferralLevel = ReferralLevel.FIRST
+    accrual_strategy: ReferralAccrualStrategy = ReferralAccrualStrategy.ON_FIRST_PAYMENT
+    reward_type: ReferralRewardType = ReferralRewardType.EXTRA_DAYS
+    reward_strategy: ReferralRewardStrategy = ReferralRewardStrategy.FIXED_AMOUNT
+    reward_config: Union[FixedAmountConfig, PercentageConfig, MultilevelConfig] = (
+        FixedAmountConfig()
+    )
+
+
 class SettingsDto(TrackableDto):
     id: Optional[int] = Field(default=None, frozen=True)
 
@@ -50,6 +82,8 @@ class SettingsDto(TrackableDto):
 
     user_notifications: UserNotificationDto = UserNotificationDto()
     system_notifications: SystemNotificationDto = SystemNotificationDto()
+
+    referral: ReferralSettingsDto = ReferralSettingsDto()
 
     @property
     def channel_has_username(self) -> bool:

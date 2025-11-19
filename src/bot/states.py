@@ -92,8 +92,15 @@ class DashboardUser(StatesGroup):
 class DashboardRemnashop(StatesGroup):
     MAIN = State()
     ADMINS = State()
-    REFERRAL = State()
     ADVERTISING = State()
+
+
+class RemnashopReferral(StatesGroup):
+    MAIN = State()
+    LEVEL = State()
+    REWARD = State()
+    ACCRUAL_STRATEGY = State()
+    REWARD_STRATEGY = State()
 
 
 class RemnashopGateways(StatesGroup):

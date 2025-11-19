@@ -61,6 +61,9 @@ class SettingsService(BaseService):
         if settings.system_notifications.changed_data:
             settings.system_notifications = settings.system_notifications
 
+        if settings.referral.changed_data:
+            settings.referral = settings.referral
+
         changed_data = settings.prepare_changed_data()
         db_updated_settings = await self.uow.repository.settings.update(**changed_data)
         await self._clear_cache()
@@ -161,6 +164,12 @@ class SettingsService(BaseService):
             }
             for field, value in settings.system_notifications.model_dump().items()
         ]
+
+    #
+
+    async def is_referral_enable(self) -> bool:
+        settings = await self.get()
+        return settings.referral.enable
 
     #
 

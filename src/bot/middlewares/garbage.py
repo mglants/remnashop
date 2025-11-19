@@ -22,7 +22,7 @@ class GarbageMiddleware(EventTypedMiddleware):
         message = cast(Message, event)
         user: UserDto = data[USER_KEY]
 
-        if message.text != f"/{Command.START.value.command}":
+        if message.text and not message.text.startswith(f"/{Command.START.value.command}"):
             await message.delete()
             logger.debug(f"Message '{message.content_type}' deleted from '{user.telegram_id}'")
 

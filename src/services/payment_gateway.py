@@ -45,6 +45,7 @@ from src.infrastructure.taskiq.tasks.notifications import (
     send_system_notification_task,
     send_test_transaction_notification_task,
 )
+from src.infrastructure.taskiq.tasks.referrals import assign_referral_reward_task
 from src.infrastructure.taskiq.tasks.subscriptions import purchase_subscription_task
 from src.services.subscription import SubscriptionService
 
@@ -310,6 +311,8 @@ class PaymentGatewayService(BaseService):
             return
 
         # TODO: Add referral logic
+        if not transaction.pricing.is_free:
+            await assign_referral_reward_task.kiq(user=transaction.user)
 
         i18n_keys = {
             PurchaseType.NEW: "ntf-event-subscription-new",
