@@ -31,7 +31,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/opt/remnashop
 
 COPY ./src ./src
-COPY ./assets /opt/remnashop/assets.default
+COPY ./assets /opt/remnashop/assets
 COPY ./docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x ./docker-entrypoint.sh
